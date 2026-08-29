@@ -135,7 +135,31 @@ export const openrouter: Provider = {
 
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
-      if (res.status === 429) throw new ProviderError(`rate limited: ${txt.slice(0, 160)}`, "network");
+      // 429 is the provider saying "slow down", which is backpressure, not a
+      // network fault. Classifying it as network gave it the short socket-retry
+      // backoff (1.5s doubling) and it exhausted every attempt against a
+      // provider-side limit that needed tens of seconds — 7 rows on mistral-nemo
+      // landed in BORING as a result, blaming the model for our pacing.
+      if (res.status === 429) throw new ProviderError(redact(`rate limited: ${txt.slice(0, 160)}`), "backpressure");
+      /**
+       * 402 is two completely different conditions wearing one status code, and
+       * conflating them cost the prior experiment its frontier ceiling — 8 of 60
+       * cases ended with no ceiling data at all.
+       *
+       *   "…given your current in-flight requests. Retry after in-flight
+       *    requests settle."   -> BACKPRESSURE. Credit reserved against
+       *    concurrent calls, not credit spent. Plenty may remain ($7.91 did when
+       *    this first fired). Retryable, and NOT a verdict about the model.
+       *
+       *   anything else        -> genuinely out of credit. Retrying spins
+       *    forever and every subsequent cell is void, so it stops the run.
+       */
+      if (res.status === 402) {
+        if (/in-flight|in flight|settle/i.test(txt)) {
+          throw new ProviderError(redact(`credit reserved against in-flight requests: ${txt.slice(0, 160)}`), "backpressure");
+        }
+        throw new ProviderError(redact(`out of credit: ${txt.slice(0, 200)}`), "out_of_credit");
+      }
       if (/context|too long|maximum.*token/i.test(txt)) {
         throw new ProviderError(`context: ${txt.slice(0, 200)}`, "context_overflow");
       }

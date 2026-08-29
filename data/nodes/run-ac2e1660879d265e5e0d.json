@@ -1,1 +1,0 @@
-{"key":"run-ac2e1660879d265e5e0d","type":"run","inputs":{"skill":"anthropic__pdf","model":"gemma2-2b-q4_0","condition":"A","digest":"8ccf136fdd5298f3"},"rows":[],"discarded":"stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.","completed_at":"2026-08-29T03:44:09.951Z","wall_ms":73032,"spend_usd":0}

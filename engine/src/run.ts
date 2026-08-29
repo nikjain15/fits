@@ -193,7 +193,25 @@ async function plan(skills: CorpusSkill[], models: ModelSpec[], conditions: Cond
       }
     }
   }
-  cells.sort((a, b) => a.priority - b.priority || a.calls - b.calls);
+  /**
+   * Within a priority band, run the CHEAP models first.
+   *
+   * The frontier is one model of thirteen and roughly half the bill, and its
+   * cells are the slowest. Running it first — which is what sorting by call
+   * count alone did — means a run that is interrupted, or that hits the spend
+   * cap, has spent most of the budget on the ceiling and measured almost none of
+   * the small models the product is actually about. Cheapest-first means every
+   * early stop still leaves a usable grid.
+   */
+  const unitCost = (m: { provider: string; id: string; isCeiling?: boolean }) => {
+    if (m.isCeiling) return Number.MAX_SAFE_INTEGER;   // always last
+    const p = PROVIDERS[m.provider as keyof typeof PROVIDERS].price(m.id);
+    return p.inputPerMTok * 0.9 + p.outputPerMTok * 0.1;
+  };
+  cells.sort((a, b) =>
+    a.priority - b.priority ||
+    unitCost(a.model) - unitCost(b.model) ||
+    a.calls - b.calls);
   return cells;
 }
 
@@ -365,8 +383,25 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
         });
 
         // Early stop. Recorded as a STATE with its reason, never as a low score.
+        /**
+         * The early stop protects a BUDGET, so it should be gated on money, not
+         * on lane.
+         *
+         * `llama-3.2-1b` costs $0.027 per million tokens — a whole cell is about
+         * a fifth of a cent. Stopping it at 20 runs saved nothing and threw away
+         * the finding: that a 1B model fails these skills IS the result, and the
+         * reference dataset publishes it at 25%. Fourteen cells were discarded
+         * this way before the gate was fixed, every one of them a measurement we
+         * wanted and could trivially afford.
+         *
+         * A cell is cheap enough to finish when its whole remaining cost is under
+         * a cent. Anything dearer keeps the stop.
+         */
+        const cellCost = PROVIDERS[cell.model.provider].price(cell.model.id);
+        const cellUsd = cell.calls * CFG.STEPS_PER_RUN * (CFG.EST_TOKENS_PER_CALL / 1e6) *
+          (CFG.EST_INPUT_SHARE * cellCost.inputPerMTok + (1 - CFG.EST_INPUT_SHARE) * cellCost.outputPerMTok);
         const earlyStopOn = CFG.EARLY_STOP === "on" ||
-          (CFG.EARLY_STOP === "auto" && cell.model.lane === "hosted");
+          (CFG.EARLY_STOP === "auto" && cell.model.lane === "hosted" && cellUsd >= 0.01);
         // Context overflow is the exception: it is never worth finishing, because
         // every remaining run would fail for the same packaging reason and none of
         // them would be a measurement of the model.
@@ -440,6 +475,43 @@ async function main() {
     process.exit(1);
   }
 
+  /**
+   * PREFLIGHT. One cheap call per model before anything is planned.
+   *
+   * `available()` only checks that a key exists, which is not the same as a
+   * model being usable. `mistral-nemo-12b` is present in the catalog, priced,
+   * and 429s on every single request — and because cheap-first ordering put the
+   * cheapest model first, all four workers spent eighteen minutes grinding
+   * through its retry ladder and landed nothing at all.
+   *
+   * Thirteen calls costing $0.0002 total answer that before the grid starts. A
+   * model that fails preflight is RECORDED as not-run with the provider's own
+   * reason — never dropped silently, and never allowed to look like a low score.
+   */
+  if (!flag("plan") && models.some((m) => m.lane === "hosted")) {
+    const dead: Array<{ key: string; why: string }> = [];
+    await Promise.all(models.filter((m) => m.lane === "hosted").map(async (m) => {
+      try {
+        await PROVIDERS[m.provider].complete(m.id, {
+          system: "You reply with one JSON object.",
+          messages: [{ role: "user", content: `Reply with {"answer":"ok"}` }],
+          maxTokens: 16,
+          ...(m.sendTemperature ? { temperature: 0, seed: 7 } : {}),
+          disableReasoning: m.disableReasoning,
+        });
+      } catch (e: any) {
+        dead.push({ key: m.key, why: `${e?.kind ?? "error"}: ${String(e?.message ?? e).slice(0, 120)}` });
+      }
+    }));
+    if (dead.length) {
+      console.log(`\n  preflight — ${dead.length} model(s) unusable, recorded as not-run:`);
+      for (const d of dead) console.log(`    ${d.key.padEnd(20)} ${d.why}`);
+      const out = dead.map((d) => d.key);
+      models = models.filter((m) => !out.includes(m.key));
+      store.logRun({ event: "preflight_excluded", run_id: runId, models: dead });
+    }
+  }
+
   const cells = await plan(skills, models, conditions);
   if (!cells.length) {
     console.log("\nNothing to do — every cell is present and its key still matches.");
@@ -483,7 +555,7 @@ async function main() {
 
   const spend = { usd: 0 };
   const deadline = Date.now() + CFG.BUDGET_MIN * 60_000;
-  let done = 0, discarded = 0;
+  let done = 0, discarded = 0, skippedByBreaker = 0;
 
   /**
    * CONCURRENCY IS A PROPERTY OF THE LANE, not a global setting.
@@ -501,6 +573,39 @@ async function main() {
     : Number(process.env.FITS_CONCURRENCY ?? 6);
   let stopped = false;
   let cursor = 0;
+
+  /**
+   * The ceiling model runs ALONE, whatever the lane concurrency is.
+   *
+   * OpenRouter reserves credit against in-flight requests based on context plus
+   * max_tokens. The frontier's prompts are the largest in the grid, so three
+   * concurrent frontier cells reserve enough to trip 402 backpressure against a
+   * balance that is nowhere near spent — it fired with $7.91 still available.
+   * Retrying rides out a momentary collision but not a sustained one: three rows
+   * still exhausted six attempts.
+   *
+   * Serialising just the ceiling costs little, because it is one model of
+   * thirteen and it is sorted last, while every cheap model keeps the full
+   * concurrency.
+   */
+  let ceilingBusy: Promise<void> | null = null;
+
+  /**
+   * PER-MODEL CIRCUIT BREAKER.
+   *
+   * Some models are rate-limited so hard on this provider that every cell burns
+   * the full retry ladder (~5 minutes) and is then discarded for exceeding the
+   * BORING threshold. `mistral-nemo-12b` did exactly that: three cells, fifteen
+   * minutes, zero measurements.
+   *
+   * Grinding through 19 more of those is not persistence, it is a way to spend a
+   * night's wall-clock producing nothing. After two consecutive cells lost to
+   * provider backpressure the model is set aside for this run and RECORDED as
+   * not-run with the reason. That is the brief's rule — a model we could not run
+   * is recorded as not-run, never fabricated and never silently dropped.
+   */
+  const modelStrikes = new Map<string, number>();
+  const benched = new Map<string, string>();
 
   const worker = async () => {
     for (;;) {
@@ -523,7 +628,18 @@ async function main() {
         }
         return;
       }
-      await runOneCell(cell);
+      const bench = benched.get(cell.model.key);
+      if (bench) { skippedByBreaker++; continue; }
+
+      if (cell.model.isCeiling) {
+        while (ceilingBusy) await ceilingBusy;
+        let release!: () => void;
+        ceilingBusy = new Promise<void>((r) => { release = r; });
+        try { await runOneCell(cell); }
+        finally { const p = ceilingBusy; ceilingBusy = null; release(); void p; }
+      } else {
+        await runOneCell(cell);
+      }
     }
   };
 
@@ -534,6 +650,14 @@ async function main() {
     try {
       out = await runCell(cell, runId, spend);
     } catch (e: any) {
+      // Running out of credit is not a cell-level fault: every cell after it
+      // would be void too, and a run that keeps going produces a dataset full of
+      // holes that look like findings. Stop.
+      if (e instanceof ProviderError && e.kind === "out_of_credit") {
+        stopped = true;
+        console.error(`\n  OUT OF CREDIT — stopping. ${String(e.message).slice(0, 160)}`);
+        return;
+      }
       // Cached response or provider substitution. The cell is void, loudly.
       const why = String(e?.message ?? e);
       store.write({
@@ -556,6 +680,17 @@ async function main() {
       store.appendTranscripts(out.transcripts);
       console.log(`  ${label.padEnd(52)} stopped — ${out.discarded.slice(0, 60)}`);
       discarded++;
+      // Only provider-side faults count toward the breaker. A cell stopped for
+      // being genuinely far below the bar is a measurement, not a fault.
+      if (/BORING|backpressure|rate limit/i.test(out.discarded)) {
+        const n = (modelStrikes.get(cell.model.key) ?? 0) + 1;
+        modelStrikes.set(cell.model.key, n);
+        if (n >= 2) {
+          benched.set(cell.model.key,
+            `provider backpressure — ${n} consecutive cells lost to rate limiting; recorded as not-run`);
+          console.error(`  ! ${cell.model.key} benched for this run: sustained provider rate limiting. Recorded as not-run, not as a low score.`);
+        }
+      }
       return;
     }
 
@@ -569,6 +704,7 @@ async function main() {
       spend_usd: out.rows.reduce((a, r) => a + r.cost_usd, 0),
     });
     store.appendTranscripts(out.transcripts);
+    modelStrikes.set(cell.model.key, 0);   // a landed cell clears the strikes
     done++;
 
     const med = out.rows.map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
@@ -584,7 +720,11 @@ async function main() {
   await Promise.all(Array.from({ length: Math.min(laneConcurrency, cells.length) }, worker));
 
   store.logRun({ event: "run_end", run_id: runId, cells_done: done, cells_discarded: discarded, spend_usd: spend.usd });
-  console.log(`\n${done} cells landed · ${discarded} discarded · $${spend.usd.toFixed(3)} spent\n`);
+  if (benched.size) {
+    console.error(`\n  models benched (recorded as not-run, never as a low score):`);
+    for (const [k, why] of benched) console.error(`    ${k.padEnd(20)} ${why}`);
+  }
+  console.log(`\n${done} cells landed · ${discarded} discarded · ${skippedByBreaker} skipped by the breaker · $${spend.usd.toFixed(3)} spent\n`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -42,6 +42,10 @@ export interface Cell {
   invalid: boolean;
   attribution: Partial<Record<"FORMAT" | "SKILL_TEXT" | "MODEL", number>>;
   by_kind: Record<string, { substance: Rate; strict: Rate }>;
+  /** Median USD to run this skill once on this model. Real, from the provider's
+   *  own usage accounting — not a price-list multiplication. 0 on the local lane,
+   *  where the cost is electricity and is not ours to quote. */
+  cost_per_run: number;
   lane: string;
   quantization: string;
   served_provider: string;
@@ -119,7 +123,9 @@ export function cells(rows: ResultRow[]): Map<string, Cell> {
       };
     }
 
+    const costs = rs.map((r) => r.cost_usd).filter((x) => x > 0).sort((a, b) => a - b);
     out.set(k, {
+      cost_per_run: costs.length ? costs[Math.floor(costs.length / 2)] : 0,
       skill: r0.skill, model: r0.model, condition: r0.condition,
       substance, strict,
       p50_ms: r0.lane === "local" && lat.length ? lat[Math.floor(lat.length / 2)] : null,

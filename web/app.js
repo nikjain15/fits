@@ -18,7 +18,7 @@
 let D = null, M = [], SK = [], MET = null;
 let BAR = { pass: 0.80, strict: false };
 let myModel = 0;
-let state = { q: '', only: false, url: '', yours: [] };
+let state = { q: '', only: false, url: '', yours: [], catError: '', sort: 'fit', cat: '', catSort: 'stars', licOnly: false };
 let dstate = { tab: null, fm: null, openRung: null };
 let route = null;
 
@@ -149,18 +149,156 @@ function miniTrack(sk) {
 }
 
 /* ---------------------------------------------------------------- home */
+/* ================= the catalogue =================
+ * Provenance, never evidence. A catalogue row says who published a skill and
+ * whether we have tested it — nothing more. It must never look like a result.
+ *
+ * Two tiers: the most-starred slice arrives with the page, and the full index
+ * (tens of MB) is fetched only when a search actually needs it, with the wait
+ * shown rather than hidden behind a spinner that implies instant answers.
+ */
+const CATLABEL = { documents: 'Documents', data: 'Data', web: 'Browser', cloud: 'Deploy', dev: 'Coding',
+  comms: 'Email', design: 'Design', science: 'Science', writing: 'Writing', agents: 'Agents',
+  business: 'Business', media: 'Media' };
+let CAT = null;          // top tier, loaded once
+let CAT_FULL = null;     // full index, loaded on demand
+let CAT_LOADING = false;
+
+function unpack(j) {
+  const out = j.rows.map(r => ({ r: r[0], n: r[1], p: r[2], s: r[3], z: r[4], l: r[5], c: r[6], m: r[7], g: (r[8] || '').split(',').filter(Boolean), d: r[9] || '' }));
+  out.stats = j;
+  return out;
+}
+
+async function loadCatalogue(full) {
+  if (full && CAT_FULL) return CAT_FULL;
+  if (!full && CAT) return CAT;
+  if (CAT_LOADING) return full ? CAT_FULL : CAT;
+  CAT_LOADING = true;
+  try {
+    const r = await fetch(full ? 'data/catalogue-full.json' : 'data/catalogue-top.json');
+    if (!r.ok) throw new Error('catalogue ' + r.status);
+    const j = await r.json();
+    if (full) CAT_FULL = unpack(j); else CAT = unpack(j);
+  } catch (e) {
+    // A missing catalogue is not a broken site — the measurements stand on their
+    // own. Say it is unavailable rather than rendering an empty directory that
+    // looks like "we found nothing".
+    if (full) CAT_FULL = null; else CAT = null;
+    state.catError = String(e.message || e);
+  } finally {
+    CAT_LOADING = false;
+    render();
+  }
+  return full ? CAT_FULL : CAT;
+}
+
+function catFilter() {
+  const src = CAT_FULL || CAT;
+  if (!src) return null;
+  const t = state.q.trim().toLowerCase();
+  const hits = [];
+  for (const row of src) {
+    if (state.cat && !row.g.includes(state.cat)) continue;
+    if (state.licOnly && !row.l) continue;
+    if (t && !(row.n.toLowerCase().includes(t) || row.r.toLowerCase().includes(t) || row.d.toLowerCase().includes(t))) continue;
+    hits.push(row);
+    if (hits.length >= 600) break;
+  }
+  const by = {
+    stars: (a, b) => b.s - a.s,
+    copies: (a, b) => b.c - a.c,
+    size: (a, b) => b.z - a.z,
+    name: (a, b) => a.n.localeCompare(b.n),
+    tested: (a, b) => (b.m ? 1 : 0) - (a.m ? 1 : 0) || b.s - a.s,
+  };
+  return hits.sort(by[state.catSort] || by.stars);
+}
+
+function renderCatalogue() {
+  const src = CAT_FULL || CAT;
+  if (state.catError) {
+    return `<div class="note t">Catalogue unavailable (${esc(state.catError)}). The measurements above are unaffected.</div>`;
+  }
+  if (!src) { loadCatalogue(false); return `<div class="note t">Loading the catalogue…</div>`; }
+  const st = src.stats;
+  const q = state.q.trim();
+  const filtered = catFilter() || [];
+  const hits = filtered.slice(0, 60);
+  const searchingAll = Boolean(CAT_FULL);
+  const cats = st.categories || [];
+
+  return `<div class="lhead" style="margin-top:38px"><h2>Catalogued</h2>
+      <span class="ct"><b>${st.distinct_skills.toLocaleString()}</b> distinct skills · ${st.repos.toLocaleString()} repos</span></div>
+    <div class="ok0" style="margin:12px 0 16px">
+      <b>Found, not tested.</b> These are skills we can name and locate — provenance only, no verdict.
+      Of them, <b>${st.measured}</b> have been run against a model; the rest say <span class="mono">not tested</span> and mean exactly that.
+      One measured cell is ~126 model calls, so testing all ${st.distinct_skills.toLocaleString()} is ${(st.distinct_skills * 126 / 1e6).toFixed(1)}M calls and is not going to happen — the queue works down by stars.
+      <br><span class="dim">${st.copies_folded.toLocaleString()} byte-identical copies folded into their originals: one skill vendored into 86 repos is one skill. ${(100 * st.with_osi_licence / st.distinct_skills).toFixed(0)}% carry an OSI licence.</span>
+    </div>
+    <div class="chips">
+      <button class="tog ${!state.cat ? 'on' : ''}" data-cat="">all</button>
+      ${cats.map(c => `<button class="tog ${state.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${c.label} <span class="dim">${c.n.toLocaleString()}</span></button>`).join('')}
+      <button class="tog ${state.licOnly ? 'on' : ''}" data-t="licOnly">OSI licence only</button>
+    </div>
+    <div class="chips" style="margin-top:4px"><span class="dim" style="font-size:11.5px;align-self:center">sort</span>
+      ${[['stars', 'repo stars'], ['copies', 'times copied'], ['tested', 'tested first'], ['size', 'largest'], ['name', 'name']]
+        .map(([k, l]) => `<button class="tog ${state.catSort === k ? 'on' : ''}" data-csort="${k}">${l}</button>`).join('')}
+    </div>
+    <div class="note" style="margin:10px 0">
+      ${filtered.length >= 600 ? 'First 600 matches. ' : `${filtered.length.toLocaleString()} match. `}
+      ${searchingAll ? `Searching all ${st.distinct_skills.toLocaleString()}.` : `Searching the top ${st.top_tier.toLocaleString()} by stars — <span class="lnk" data-catall>search all ${st.distinct_skills.toLocaleString()}</span>.`}
+      ${st.described ? `<span class="dim"> ${Math.round(100 * st.described / st.top_tier)}% of the top tier carries the author's own description; the rest are categorised from the name alone, which is weaker.</span>` : ''}
+    </div>
+    <div class="colh" style="grid-template-columns:minmax(0,1fr) 84px 74px 96px"><span>skill</span><span>copied</span><span>size</span><span>status</span></div>
+    ${hits.length === 0 ? `<div class="note t">Nothing matches “${esc(q)}”.</div>` : ''}
+    ${hits.map(row => `<div class="item" style="grid-template-columns:minmax(0,1fr) 84px 74px 96px">
+      <div><div><span class="nm">${esc(row.n)}</span><span class="au">${esc(row.r)}</span>
+        ${row.l ? '' : '<span class="pill warn" title="GitHub reports no licence for this repo">no licence</span>'}</div>
+        <div class="ds">${row.d ? esc(row.d.slice(0, 150)) : '<span style="color:var(--fg4)">no description in the file</span>'}</div>
+        <div class="sb" style="color:var(--fg4)">${row.s.toLocaleString()}★ repo · ${row.g.length ? row.g.map(g => CATLABEL[g] || g).join(' · ') : 'uncategorised'}</div></div>
+      <div class="mono" style="font-size:11.5px;color:${row.c ? 'var(--ac)' : 'var(--fg4)'}" title="repositories carrying a byte-identical copy of this skill">${row.c ? '×' + (row.c + 1) : '—'}</div>
+      <div class="mono dim" style="font-size:11.5px">${(row.z / 1000).toFixed(1)}k</div>
+      <div>${row.m
+        ? '<span class="pill ac">tested</span>'
+        : '<span class="mono" style="color:var(--fg4);font-size:11.5px">not tested</span>'}</div>
+    </div>`).join('')}`;
+}
+
+/** Median USD to run this skill once on the selected model. Hosted lanes only —
+ *  on the local lane the cost is electricity and is not ours to quote. */
+function costOf(sk) {
+  const c = cell(sk, M[myModel].m, 'A');
+  return c && c.cost ? c.cost : null;
+}
+function money(x) {
+  if (x === null) return '—';
+  if (x === 0) return 'local';
+  return x < 0.001 ? '<$0.001' : '$' + x.toFixed(3);
+}
+
 function renderHome() {
   let list = SK.filter(sk => {
     if (state.q && !(sk + ' ' + D.S[sk].repo).toLowerCase().includes(state.q.toLowerCase())) return false;
     if (state.only) { const f = fitOf(sk, myModel); if (!f || !f.ok) return false; }
     return true;
   });
-  // Your own tested skills sort first and carry a `yours` tag.
+  // Your own tested skills always sort first and carry a `yours` tag; the chosen
+  // sort orders everything after them.
+  const rateOr = (sk, d) => { const f = fitOf(sk, myModel); return f ? f.r : d; };
+  const sorters = {
+    fit:     (a, b) => rateOr(b, -1) - rateOr(a, -1),
+    worst:   (a, b) => rateOr(a, 2) - rateOr(b, 2),
+    stars:   (a, b) => (D.S[b].stars || 0) - (D.S[a].stars || 0),
+    copies:  (a, b) => (D.S[b].copies || 0) - (D.S[a].copies || 0),
+    cost:    (a, b) => (costOf(a) ?? Infinity) - (costOf(b) ?? Infinity),
+    size:    (a, b) => D.S[b].chars - D.S[a].chars,
+    name:    (a, b) => a.localeCompare(b),
+  };
   list.sort((a, b) => {
     const ya = state.yours.includes(a) ? 1 : 0, yb = state.yours.includes(b) ? 1 : 0;
     if (ya !== yb) return yb - ya;
-    const x = fitOf(b, myModel), y = fitOf(a, myModel);
-    return (x ? x.r : 0) - (y ? y.r : 0);
+    return (sorters[state.sort] || sorters.fit)(a, b);
   });
   const fits = SK.filter(sk => { const f = fitOf(sk, myModel); return f && f.ok; }).length;
   const corpus = M.map(m => m.A ? `${m.cls} ${pc(m.A.substance.rate)}` : null).filter(Boolean).join(' · ');
@@ -179,24 +317,31 @@ function renderHome() {
       <input class="srch" id="q" placeholder="search  /" value="${esc(state.q)}"></div>
     <div class="chips"><button class="tog ${state.only ? 'on' : ''}" data-t="only">only what clears ${M[myModel].cls}</button>
       <button class="tog ${BAR.strict ? 'on' : ''}" data-t="strict">strict pass only</button></div>
+    <div class="chips" style="margin-top:4px"><span class="dim" style="font-size:11.5px;align-self:center">sort</span>
+      ${[['fit', 'best on ' + M[myModel].cls], ['worst', 'worst first'], ['cost', 'cheapest to run'], ['copies', 'most copied'], ['stars', 'repo stars'], ['size', 'largest'], ['name', 'name']]
+        .map(([k, l]) => `<button class="tog ${state.sort === k ? 'on' : ''}" data-msort="${k}">${l}</button>`).join('')}</div>
 
     <div class="ok0" style="margin:14px 0 18px">Corpus level, where the numbers have power — <b>${corpus}</b> across ${MET.skills} skills. Per-skill cells below rest on <b>${MET.cases_per_cell || '3–7'} cases each</b>, so they resolve coarsely. Read a row as a direction; read this line as a rate.</div>
 
-    <div class="colh"><span>skill</span><span>${M[0].cls} → ${M[M.length - 1].cls}</span><span>on ${M[myModel].cls}</span><span>min-spec</span></div>
+    <div class="colh" style="grid-template-columns:minmax(0,1fr) 74px 108px 76px 76px"><span>skill</span><span>${M[0].cls} → ${M[M.length - 1].cls}</span><span>on ${M[myModel].cls}</span><span>per run</span><span>min-spec</span></div>
     ${list.map(sk => {
       const f = fitOf(sk, myModel), sp = specOf(sk), s = D.S[sk];
-      return `<div class="item ${state.yours.includes(sk) ? 'yours' : ''}" tabindex="0" data-go="${sk}">
+      return `<div class="item ${state.yours.includes(sk) ? 'yours' : ''}" tabindex="0" data-go="${sk}" style="grid-template-columns:minmax(0,1fr) 74px 108px 76px 76px">
         <div><div><span class="nm">${title(sk)}</span><span class="au">${esc(s.repo)}</span>
           ${state.yours.includes(sk) ? '<span class="pill ac">yours</span>' : ''}
           ${!s.license_ok ? '<span class="pill warn" title="' + esc(s.license_note) + '">no licence</span>' : ''}</div>
-          <div class="ds">${(s.chars / 1000).toFixed(1)}k chars · ${s.stars.toLocaleString()}★ · ${s.cases} cases</div></div>
+          <div class="ds">${(s.chars / 1000).toFixed(1)}k chars · ${s.cases} cases${s.categories && s.categories.length ? ' · ' + s.categories.map(g => CATLABEL[g] || g).join(' · ') : ''}</div>
+          <div class="sb" style="color:var(--fg4)">${s.stars.toLocaleString()}★ <span title="stars belong to the repository, not to this skill">repo</span>${s.copies ? ` · copied into ${s.copies} other repo${s.copies > 1 ? 's' : ''}` : ''}${s.license_ok ? '' : ' · no licence'}</div></div>
         <div>${miniTrack(sk)}</div>
         <div><span class="v ${f && f.ok ? '' : 'no'}">${f ? p2(f.r) : (discardedOf(sk, M[myModel].m) ? '<span class="pill warn" title="' + esc(discardedOf(sk, M[myModel].m).reason) + '">stopped</span>' : '—')}</span>${f && f.a.thin ? '<span title="thin evidence" style="color:var(--warn);font-family:var(--mono)">~</span>' : ''}${f && f.a.unstable ? '<span title="unstable across repeat runs" style="color:var(--warn);font-family:var(--mono)">±</span>' : ''}
           <div class="ci">${f ? ciLine(f.a) : ''}</div></div>
+        <div class="mono" style="font-size:11.5px;color:var(--fg3)">${money(costOf(sk))}</div>
         <div class="spec ${sp && sp.min_spec ? '' : 'no'}">${sp ? specLabel(sp.min_spec) : '—'}
           ${sp && sp.first_passes_at && sp.first_passes_at !== sp.min_spec ? `<div class="sb" style="color:var(--ac)">first passes at ${sp.first_passes_at}</div>` : ''}</div></div>`;
     }).join('')}
     <div class="note t">Every number is from <span class="mono">${MET.runs.toLocaleString()}</span> real runs, ${MET.run_window.last.slice(0, 10)}. <span class="kbd">/</span> search</div>
+
+    ${renderCatalogue()}
     ${footer()}</div>`;
 }
 
@@ -429,6 +574,10 @@ document.addEventListener('click', e => {
   if (t('[data-fm]')) { dstate.fm = +t('[data-fm]').dataset.fm; render(); return; }
   if (t('[data-rung]')) { const k = +t('[data-rung]').dataset.rung; dstate.openRung = dstate.openRung === k ? null : k; render(); return; }
   if (t('[data-t]')) { const k = t('[data-t]').dataset.t; if (k === 'strict') BAR.strict = !BAR.strict; else state[k] = !state[k]; render(); return; }
+  if (t('[data-catall]')) { loadCatalogue(true); return; }
+  if (t('[data-cat]')) { state.cat = t('[data-cat]').dataset.cat; render(); return; }
+  if (t('[data-csort]')) { state.catSort = t('[data-csort]').dataset.csort; render(); return; }
+  if (t('[data-msort]')) { state.sort = t('[data-msort]').dataset.msort; render(); return; }
   if (t('[data-sample]')) { state.url = 'github.com/anthropics/skills/tree/main/skills/pdf'; render(); return; }
   if (t('[data-run]')) { route = '@run'; render(); scrollTo(0, 0); return; }
   if (t('[data-cancel]')) { route = null; render(); return; }

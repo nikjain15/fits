@@ -1,35 +1,48 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T10:00:39.417Z",
+  "generated": "2026-08-29T14:58:12.610Z",
   "bar": 0.8,
-  "runs": 2430,
-  "cells": 80,
+  "runs": 2968,
+  "cells": 110,
   "skills": 20,
   "cases": 64,
-  "models": 2,
+  "models": 6,
   "lanes": [
-    "local"
+    "local",
+    "hosted"
   ],
   "providers": [
-    "ollama-local"
+    "ollama-local",
+    "Claude Platform on AWS",
+    "Cloudflare",
+    "DeepInfra",
+    "Mistral"
   ],
   "quantizations": [
     "Q4_0",
-    "Q4_K_M"
+    "Q4_K_M",
+    "unknown"
   ],
   "context_windows": [
     8192,
-    32768
+    32768,
+    60000,
+    131072,
+    1000000
   ],
   "digests": {
+    "llama-3.2-1b": "cat-440736d4",
     "gemma2-2b-q4_0": "8ccf136fdd5298f3",
-    "qwen2.5-7b-q4km": "845dbda0ea48ed74"
+    "ministral-3b": "cat-db0df1d3",
+    "gemma-3-4b": "cat-f47ebee",
+    "qwen2.5-7b-q4km": "845dbda0ea48ed74",
+    "claude-sonnet-5": "cat-954e489f"
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T09:35:33.123Z"
+    "last": "2026-08-29T14:58:09.318Z"
   },
-  "spend_usd": 0,
+  "spend_usd": 2.3098,
   "integrity": {
     "rows_dropped_truncated": 0,
     "rows_dropped_unverifiable": 0,
@@ -40,12 +53,14 @@
     "verdict": "clean — zero BORING, no substitutions, no cached responses"
   },
   "ceiling": {
-    "present": false,
-    "failed_cases": [],
+    "present": true,
+    "failed_cases": [
+      "tok-1",
+      "vercel-1",
+      "db-1",
+      "pptx-1"
+    ],
     "no_verdict_cases": [
-      "cal-1",
-      "cal-2",
-      "cal-3",
       "bio-1",
       "bio-2",
       "bio-3",
@@ -56,59 +71,20 @@
       "pdf-5",
       "pdf-6",
       "pdf-7",
-      "tok-1",
-      "tok-2",
-      "tok-3",
-      "sheets-1",
-      "sheets-2",
-      "sheets-3",
       "draw-1",
       "draw-2",
       "draw-3",
       "nb-1",
       "nb-2",
       "nb-3",
-      "vercel-1",
-      "vercel-2",
-      "vercel-3",
-      "def-1",
-      "def-2",
-      "def-3",
-      "db-1",
-      "db-2",
-      "db-3",
-      "web-1",
-      "web-2",
-      "web-3",
-      "canvas-1",
-      "canvas-2",
-      "canvas-3",
-      "docx-1",
-      "docx-2",
-      "docx-3",
-      "xlsx-1",
-      "xlsx-2",
-      "xlsx-3",
-      "drive-1",
-      "drive-2",
-      "drive-3",
       "amz-1",
       "amz-2",
       "amz-3",
       "dt-1",
       "dt-2",
-      "dt-3",
-      "gmail-1",
-      "gmail-2",
-      "gmail-3",
-      "pptx-1",
-      "pptx-2",
-      "pptx-3",
-      "obs-1",
-      "obs-2",
-      "obs-3"
+      "dt-3"
     ],
-    "note": "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed."
+    "note": "Attribution computed only over cases the ceiling handled."
   },
   "quantization_delta": [
     {
@@ -121,113 +97,12 @@
   "not_measured": {
     "classes": [
       "0.5B",
-      "1B",
       "1.5B",
-      "3B",
-      "4B",
       "8B",
       "9B",
-      "12B",
-      "frontier"
+      "12B"
     ],
-    "models": [
-      {
-        "key": "qwen2.5-0.5b",
-        "id": "qwen/qwen-2.5-0.5b-instruct",
-        "cls": "0.5B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "llama-3.2-1b",
-        "id": "meta-llama/llama-3.2-1b-instruct",
-        "cls": "1B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "gemma-3-1b",
-        "id": "google/gemma-3-1b-it",
-        "cls": "1B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "qwen2.5-1.5b",
-        "id": "qwen/qwen-2.5-1.5b-instruct",
-        "cls": "1.5B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "llama-3.2-3b",
-        "id": "meta-llama/llama-3.2-3b-instruct",
-        "cls": "3B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "qwen2.5-3b",
-        "id": "qwen/qwen-2.5-3b-instruct",
-        "cls": "3B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "gemma-3-4b",
-        "id": "google/gemma-3-4b-it",
-        "cls": "4B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "qwen3-4b",
-        "id": "qwen/qwen3-4b",
-        "cls": "4B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "phi-4-mini",
-        "id": "microsoft/phi-4-mini-instruct",
-        "cls": "4B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "mistral-7b",
-        "id": "mistralai/mistral-7b-instruct",
-        "cls": "7B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "qwen2.5-7b",
-        "id": "qwen/qwen-2.5-7b-instruct",
-        "cls": "7B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "qwen3-8b",
-        "id": "qwen/qwen3-8b",
-        "cls": "8B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "llama-3.1-8b",
-        "id": "meta-llama/llama-3.1-8b-instruct",
-        "cls": "8B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "gemma-2-9b",
-        "id": "google/gemma-2-9b-it",
-        "cls": "9B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "mistral-nemo-12b",
-        "id": "mistralai/mistral-nemo",
-        "cls": "12B",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      },
-      {
-        "key": "claude-sonnet-5",
-        "id": "anthropic/claude-sonnet-5",
-        "cls": "frontier",
-        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
-      }
-    ],
+    "models": [],
     "note": "Absent, not estimated. A class with no measurement is shown nowhere on the site except here."
   },
   "thresholds": {

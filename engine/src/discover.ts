@@ -117,6 +117,30 @@ function starRanges(): string[] {
   return out;
 }
 
+/**
+ * Repos that must be crawled regardless of what the topic search returns.
+ *
+ * Topic search only finds repos whose owners tagged them. Seven of the twenty
+ * skills we have actually MEASURED live in repos carrying no relevant topic at
+ * all — kepano/obsidian-skills, vercel-labs/agent-skills, browser-act/skills and
+ * others — so the catalogue was missing the very skills the site has data for.
+ * A discovery method that cannot find the things you already know about is not
+ * finished; docs/skill-format.md §6 lists the hand-maintained seed list as the
+ * fourth strategy for exactly this reason.
+ */
+const SEED_REPOS = [
+  "anthropics/skills",
+  "kepano/obsidian-skills",
+  "vercel-labs/agent-skills",
+  "browser-act/skills",
+  "teng-lin/notebooklm-py",
+  "K-Dense-AI/scientific-agent-skills",
+  "addyosmani/agent-skills",
+  "Agents365-ai/drawio-skill",
+  "googleworkspace/agent-skills",
+  "openclaw/openclaw",
+];
+
 /** Search surfaces, in the order docs/skill-format.md §6 records. */
 const TOPICS = [
   "agent-skills", "claude-skills", "agent-plugins", "ai-skills",
@@ -143,6 +167,13 @@ async function findRepos(state: CrawlState, budgetMs: number): Promise<void> {
   const t0 = Date.now();
   const queued = new Set(state.reposQueued);
   const done = new Set(state.reposDone);
+
+  // Seeds first, so the repos we have measurements for are never missing from
+  // the catalogue because a search happened not to surface them.
+  for (const r of SEED_REPOS) {
+    if (!queued.has(r) && !done.has(r)) { queued.add(r); state.reposQueued.unshift(r); }
+  }
+  saveState(state);
 
   for (const topic of TOPICS) {
     for (const range of starRanges()) {
@@ -200,12 +231,15 @@ async function walkRepos(state: CrawlState, budgetMs: number): Promise<number> {
     for (const node of tree?.tree ?? []) {
       if (node.type !== "blob") continue;
       if (!/(^|\/)SKILL\.md$/i.test(node.path)) continue;
-      const dir = node.path.replace(/\/SKILL\.md$/i, "");
+      // A skill at the repo root has path "SKILL.md" and no directory segment.
+      // The earlier expression left dir === "SKILL.md" for those, which turned
+      // 544 distinct root-level skills into one meaningless bucket.
+      const dir = /\//.test(node.path) ? node.path.replace(/\/SKILL\.md$/i, "") : "";
       rows.push({
         id: `${full}/${dir}`,
         repo: full,
         path: node.path,
-        dir: dir.split("/").pop() ?? dir,
+        dir: dir ? (dir.split("/").pop() ?? dir) : (full.split("/").pop() ?? full),
         // name/description are filled in lazily when a skill is fetched for
         // measurement. Guessing them from the path would be inventing metadata.
         name: "",
@@ -278,4 +312,11 @@ async function main() {
   console.log(`  → ${INDEX}`);
 }
 
-main();
+/**
+ * Entry guard. The first version of this used `import.meta.url === file://argv[1]`,
+ * which tsx does not satisfy, so main() never ran and the process exited silently
+ * with an empty log. Replacing it with a bare `main()` fixed that and introduced a
+ * far worse bug: importing this module for its `loadCatalogue` helper STARTED A
+ * CRAWL. Match on the filename instead, which holds under tsx and under node.
+ */
+if (/discover\.ts$/.test(process.argv[1] ?? "")) main();

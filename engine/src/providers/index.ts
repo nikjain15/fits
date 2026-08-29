@@ -67,6 +67,10 @@ export class ProviderError extends Error {
       | "context_overflow"
       | "provider"
       | "network"
+      /** The gateway asking us to wait — retryable, and not a model verdict. */
+      | "backpressure"
+      /** Genuinely out of money. Never retried; stops the run. */
+      | "out_of_credit"
       | "cached_response"
       | "provider_substitution",
   ) {
@@ -125,7 +129,7 @@ export function servedMatches(requested: string, served: string): boolean {
 export async function withRetry<T>(
   label: string,
   fn: () => Promise<T>,
-  attempts = 5,
+  attempts = 4,
 ): Promise<T> {
   let last: unknown;
   for (let i = 0; i < attempts; i++) {
@@ -134,11 +138,31 @@ export async function withRetry<T>(
     } catch (e: any) {
       last = e;
       const kind = e instanceof ProviderError ? e.kind : "";
-      if (kind !== "network") throw e;
+      // `backpressure` is the gateway telling us to wait, not a fault: OpenRouter
+      // answers 402 "would exceed your available credits given your current
+      // in-flight requests — retry after in-flight requests settle" when the
+      // RESERVED total across concurrent calls exceeds the balance, even with
+      // plenty of credit left. It is retryable and it is not a model verdict;
+      // recording it as BORING (36 rows on the first grid) blamed the frontier
+      // for our own concurrency. `out_of_credit` is the genuinely different one
+      // and is never retried — it stops the run.
+      if (kind !== "network" && kind !== "backpressure") throw e;
       if (i === attempts - 1) break;
       // Full jitter. A fixed backoff synchronises every worker onto the same
       // retry instant and re-trips the limit that caused the wait.
-      const base = Math.min(30_000, 1_500 * 2 ** i);
+      // Backpressure needs a longer wait than a dropped socket: the point is to
+      // let other in-flight requests settle, which takes seconds, not milliseconds.
+      /**
+       * Bounded on purpose. An earlier, more patient ladder (8 attempts, up to
+       * 60s each) meant one persistently rate-limited model could hold a worker
+       * for five minutes per cell — four workers spent eighteen minutes on
+       * `mistral-nemo-12b` and landed nothing. Riding out a momentary collision
+       * is worth a minute; riding out a provider that simply will not serve us
+       * is not, and the circuit breaker upstream is the right answer to that.
+       */
+      const base = kind === "backpressure"
+        ? Math.min(20_000, 4_000 * 2 ** i)
+        : Math.min(15_000, 1_500 * 2 ** i);
       await new Promise((r) => setTimeout(r, Math.random() * base + 250));
     }
   }

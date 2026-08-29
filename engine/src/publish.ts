@@ -20,6 +20,8 @@ import { join } from "node:path";
 import { REPO_ROOT, loadCorpus } from "./corpus.ts";
 import { MODELS, available } from "./models.ts";
 import * as store from "./store.ts";
+import { writeCatalogue, buildCatalogue } from "./catalogue.ts";
+import { categorise, CATEGORY_LABEL } from "./categorise.ts";
 import { cells, markCeiling, modelSummary, classesFor, specFor, quantizationDeltas } from "./aggregate.ts";
 import { SIZE_CLASS_ORDER, HARNESS_VERSION, type Condition, type ResultRow } from "./types.ts";
 import { acceptance, suiteFor } from "./cases.ts";
@@ -34,6 +36,23 @@ const LEGACY_WINDOW: Record<string, number> = {
   "qwen2.5:7b-instruct-q4_K_M": 16384,
 };
 const BAR = Number(process.env.FITS_BAR ?? 0.80);
+
+/**
+ * How many OTHER repositories carry a byte-identical copy of this skill.
+ *
+ * This is the honest skill-level adoption signal. Repo stars are not: a repo
+ * with 172,282 stars and 19 skills has not given any one of them 172,282 votes.
+ * Someone vendoring a specific file into their own project is a considered act
+ * about that file.
+ */
+let _catRows: any[] | null = null;
+function copiesOf(repo: string, name: string): number {
+  if (_catRows === null) {
+    try { _catRows = buildCatalogue().rows; } catch { _catRows = []; }
+  }
+  const hit = _catRows.find((r) => r.r === repo && r.n === name);
+  return hit ? hit.c : 0;
+}
 
 function main() {
   mkdirSync(OUT, { recursive: true });
@@ -137,11 +156,33 @@ function main() {
     const acc = acceptance(id);
     S[id] = {
       repo: s.repo, url: s.url, stars: s.stars, chars: s.parsed.body_chars,
+      /**
+       * CREDIBILITY, and the one signal everybody gets wrong.
+       *
+       * `stars` is the REPOSITORY's star count, not the skill's. anthropics/skills
+       * has 172,282 stars across 19 skills; not one of those stars is a vote for
+       * the `pdf` skill specifically. Published because it is what exists and
+       * people look for it, labelled on the site as repo-level so it cannot be
+       * read as skill popularity.
+       *
+       * `copies` is the honest skill-level adoption signal: how many OTHER
+       * repositories carry a byte-identical copy of this exact file. Someone
+       * vendoring a skill into their own project is a considered act about that
+       * skill. It is the closest thing to an install count the corpus offers.
+       */
+      copies: copiesOf(s.repo, s.parsed.name),
       name: s.parsed.name, selection_chars: s.parsed.selection_chars,
       license: s.parsed.license, license_ok: s.license_ok, license_note: s.license_note,
       spec_conformance: s.parsed.spec_conformance, extra_fields: s.parsed.extra_fields,
       content_hash: s.parsed.content_hash, discovered_via: s.discovered_via,
       cases: suiteFor(id).length, suite_hash: acc.hash, suite_authored_by: acc.authored_by,
+      // These 20 are categorised from the FULL text, unlike catalogue rows which
+      // only have a name to go on. Both use the same deterministic rules; the
+      // difference is how much evidence each had, and the site says which.
+      ...(() => {
+        const c = categorise(s.parsed.name, s.parsed.body.slice(0, 12000), s.parsed.description);
+        return { categories: c.ids, category_evidence: c.evidence };
+      })(),
       classes: classesFor(rows, id),
       spec: specFor(rows, id, BAR),
     };
@@ -154,6 +195,7 @@ function main() {
       // The mockup's short keys, kept so the port is minimal...
       n: c.substance.n_calls, sub: round(c.substance.rate), strict: round(c.strict.rate),
       p50: c.p50_ms === null ? null : c.p50_ms / 1000,
+      cost: c.cost_per_run,
       cold: c.cold_ms === null ? null : c.cold_ms / 1000,
       bk: c.buckets, at: c.attribution,
       kd: Object.fromEntries(Object.entries(c.by_kind).map(([k2, v]) => [k2, {
@@ -250,6 +292,14 @@ function main() {
   writeFileSync(join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
   writeFileSync(join(OUT, "rows.json"), JSON.stringify(rows));
 
+  // The catalogue is provenance, not evidence, and is written alongside the
+  // measurements so the site can show both numbers without ever blending them.
+  try {
+    const cs = writeCatalogue();
+    console.log(`  catalogue: ${Number(cs.distinct_skills).toLocaleString()} distinct skills · ${Number(cs.repos).toLocaleString()} repos · ${Number(cs.copies_folded).toLocaleString()} copies folded · ${Number(cs.uncategorised).toLocaleString()} uncategorised — provenance only, no verdict`);
+  } catch (e: any) {
+    console.log(`  catalogue: NOT written (${String(e?.message ?? e).slice(0, 90)})`);
+  }
   console.log(`published → web/data/`);
   console.log(`  ${rows.length} rows · ${C.size} cells · ${skillIds.length} skills · ${M.length} models`);
   console.log(`  lanes: ${manifest.lanes.join(", ")} · spend $${manifest.spend_usd}`);

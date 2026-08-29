@@ -35,7 +35,7 @@ import { grade, attributionOf, type RunTrace } from "./classify.ts";
 import { ollama } from "./providers/ollama.ts";
 import { openrouter } from "./providers/openrouter.ts";
 import { conduit } from "./providers/conduit.ts";
-import { ProviderError, type Provider } from "./providers/index.ts";
+import { ProviderError, withRetry, type Provider } from "./providers/index.ts";
 import { HARNESS_VERSION, type Condition, type ModelSpec, type ResultRow } from "./types.ts";
 import * as store from "./store.ts";
 
@@ -74,13 +74,34 @@ const CFG = {
   BAR: Number(process.env.FITS_BAR ?? 0.80),
   /** Average tokens per model call, from the prior 1,260-run dataset. Used only
    *  for the dry-run estimate, never for a published number. */
-  EST_TOKENS_PER_CALL: 1450,
+  /**
+   * Both constants below are MEASURED, from 1,278 condition-A runs in
+   * data/nodes/ on 2026-08-29 — not carried over from the brief's estimate.
+   * What the measurement changed:
+   *   tokens per call   1,450 -> 2,427   (the brief's figure was 40% low)
+   *   calls per run      1.64 -> 2.06    (a graded run is two model calls, not
+   *                                       one and a bit — the loop answers after
+   *                                       acting far more often than assumed)
+   *   input share         0.80 -> 0.99   (output is ~25 tokens: these models
+   *                                       emit one terse JSON object and stop)
+   * The first two push the estimate UP by 2.1x; the third pulls it back down,
+   * because input tokens are the cheap ones. Netted out the total barely moves,
+   * which is luck, not vindication — an estimate built on three wrong numbers
+   * that happen to cancel is still the gate the spend cap is checked against.
+   *
+   * The output share is kept at 0.90/0.10 rather than the measured 0.99/0.01:
+   * every measured run is a LOCAL model, and a frontier model reasons at more
+   * length. Being conservative on the expensive half of the split is the right
+   * direction for a number whose job is to stop a bill.
+   */
+  EST_TOKENS_PER_CALL: 2427,
+  EST_INPUT_SHARE: 0.90,
   /** A graded RUN is not one model call. The agent loop calls the model once per
    *  step, and the prior 1,260-run dataset averages 1.64 steps per run. An
    *  estimate that ignored this would understate the bill by ~64% — and the
    *  estimate is what the spend cap is checked against, so understating it is a
    *  correctness bug, not a cosmetic one. Measured, not assumed. */
-  STEPS_PER_RUN: 1.64,
+  STEPS_PER_RUN: 2.06,
 };
 
 const PROVIDERS: Record<string, Provider> = { ollama, openrouter, conduit };
@@ -176,20 +197,31 @@ async function plan(skills: CorpusSkill[], models: ModelSpec[], conditions: Cond
 }
 
 // ---------------------------------------------------------------- the estimate
-function estimate(cells: Cell[]): { calls: number; tokens: number; usd: number; byModel: Map<string, { calls: number; usd: number }> } {
+function estimate(cells: Cell[]): { calls: number; tokens: number; usd: number; byModel: Map<string, { calls: number; usd: number; priced: boolean }>; unpriced: string[] } {
   let calls = 0, usd = 0;
-  const byModel = new Map<string, { calls: number; usd: number }>();
+  const byModel = new Map<string, { calls: number; usd: number; priced: boolean }>();
+  const unpriced = new Set<string>();
   for (const c of cells) {
     const p = PROVIDERS[c.model.provider].price(c.model.id);
+    /**
+     * A price of zero is only believable on the local lane. On a hosted model it
+     * means the catalog lookup returned nothing, and an estimate that renders
+     * that as "$0.000" is not a cheap model — it is a MISSING NUMBER wearing a
+     * free one's clothes. The estimate is what the spend cap is checked against,
+     * so a silent zero would let an unbounded run through the one gate that
+     * exists to stop it. Recorded and surfaced instead.
+     */
+    const priced = c.model.lane === "local" || p.inputPerMTok > 0 || p.outputPerMTok > 0;
+    if (!priced) unpriced.add(c.model.key);
     // 80/20 input/output split, from the prior dataset's token accounting.
     const modelCalls = c.calls * CFG.STEPS_PER_RUN;
-    const cost = modelCalls * (CFG.EST_TOKENS_PER_CALL / 1e6) * (0.8 * p.inputPerMTok + 0.2 * p.outputPerMTok);
+    const cost = modelCalls * (CFG.EST_TOKENS_PER_CALL / 1e6) * (CFG.EST_INPUT_SHARE * p.inputPerMTok + (1 - CFG.EST_INPUT_SHARE) * p.outputPerMTok);
     calls += modelCalls; usd += cost;
-    const e = byModel.get(c.model.key) ?? { calls: 0, usd: 0 };
-    e.calls += modelCalls; e.usd += cost;
+    const e = byModel.get(c.model.key) ?? { calls: 0, usd: 0, priced: true };
+    e.calls += modelCalls; e.usd += cost; e.priced = e.priced && priced;
     byModel.set(c.model.key, e);
   }
-  return { calls, tokens: calls * CFG.EST_TOKENS_PER_CALL, usd, byModel };
+  return { calls, tokens: calls * CFG.EST_TOKENS_PER_CALL, usd, byModel, unpriced: [...unpriced] };
 }
 
 // ---------------------------------------------------------------- running a cell
@@ -239,13 +271,13 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
           tools,
           maxSteps: CFG.MAX_STEPS,
           call: async (messages) => {
-            const r = await provider.complete(cell.model.id, {
+            const r = await withRetry(cell.model.key, () => provider.complete(cell.model.id, {
               system,
               messages,
               maxTokens: CFG.MAX_TOKENS,
               ...(cell.model.sendTemperature ? { temperature: 0, seed: 7 } : {}),
               disableReasoning: cell.model.disableReasoning,
-            });
+            }));
             latency += r.latency_ms;
             cost += r.cost_usd;
             spend.usd += r.cost_usd;
@@ -378,6 +410,11 @@ async function main() {
 
   let models = runnable;
   if (laneArg) models = models.filter((m) => m.lane === laneArg);
+  const classArg = arg("class");
+  if (classArg) {
+    const want = classArg.split(",").map((x) => x.trim());
+    models = models.filter((m) => want.includes(m.cls));
+  }
   if (modelArg) models = models.filter((m) => modelArg.split(",").includes(m.key));
 
   let skills = loadCorpus();
@@ -410,14 +447,26 @@ async function main() {
   const est = estimate(cells);
   console.log(`\n── dry run ──────────────────────────────────────────────`);
   const runs = cells.reduce((a, c) => a + c.calls, 0);
-  console.log(`  ${cells.length} cells · ${runs.toLocaleString()} graded runs · ~${Math.round(est.calls).toLocaleString()} model calls (${CFG.STEPS_PER_RUN} steps/run, measured) · ~${(est.tokens / 1e6).toFixed(1)}M tokens`);
+  console.log(`  ${cells.length} cells · ${runs.toLocaleString()} graded runs · ~${Math.round(est.calls).toLocaleString()} model calls (${CFG.STEPS_PER_RUN} calls/run, measured) · ~${(est.tokens / 1e6).toFixed(1)}M tokens`);
   for (const [k, v] of [...est.byModel].sort((a, b) => b[1].usd - a[1].usd)) {
-    console.log(`    ${k.padEnd(20)} ${String(Math.round(v.calls)).padStart(6)} model calls   $${v.usd.toFixed(3)}`);
+    console.log(`    ${k.padEnd(20)} ${String(Math.round(v.calls)).padStart(6)} model calls   ${v.priced ? "$" + v.usd.toFixed(3) : "PRICE UNKNOWN"}`);
   }
-  console.log(`  estimated spend  $${est.usd.toFixed(2)}   (hard cap $${CFG.SPEND_CAP_USD})`);
+  if (est.unpriced.length) {
+    console.error(
+      `\n  ! ${est.unpriced.length} hosted models have NO price in the live catalog, so the total below\n` +
+      `    excludes them and is a FLOOR, not an estimate: ${est.unpriced.join(", ")}\n` +
+      `    Refusing to run them — an unpriced cell cannot be checked against the cap,\n` +
+      `    and the cap is the only thing standing between a dry run and the bill.`,
+    );
+  }
+  console.log(`  estimated spend  $${est.usd.toFixed(2)}${est.unpriced.length ? " + unpriced models" : ""}   (hard cap $${CFG.SPEND_CAP_USD})`);
   console.log(`  wall budget      ${CFG.BUDGET_MIN} min`);
   console.log(`─────────────────────────────────────────────────────────`);
 
+  if (est.unpriced.length && !flag("plan")) {
+    console.error(`\nNothing was run. Re-run with --allow-unpriced only if you accept an unbounded bill.`);
+    if (!flag("allow-unpriced")) process.exit(1);
+  }
   if (est.usd > CFG.SPEND_CAP_USD) {
     console.error(`\nEstimate exceeds the cap. Nothing was run. Raise FITS_SPEND_CAP or narrow the run.`);
     process.exit(1);
@@ -434,13 +483,50 @@ async function main() {
   const deadline = Date.now() + CFG.BUDGET_MIN * 60_000;
   let done = 0, discarded = 0;
 
-  for (const cell of cells) {
-    if (Date.now() > deadline) {
-      console.log(`\nWall budget reached. ${cells.length - done - discarded} cells left for the next pass — the graph resumes exactly here.`);
-      break;
+  /**
+   * CONCURRENCY IS A PROPERTY OF THE LANE, not a global setting.
+   *
+   * The local lane must stay at 1: Ollama serialises on one GPU anyway, and
+   * running two cells at once there would interleave their KV prefix caches and
+   * corrupt the cold/warm latency split, which is the one thing that lane exists
+   * to measure.
+   *
+   * The hosted lane has no such constraint — it is bounded by rate limits and by
+   * the spend cap, both of which are checked per call. 260 cells at ~2 minutes
+   * each is nine hours serially and under two in parallel.
+   */
+  const laneConcurrency = models.every((m) => m.lane === "local") ? 1
+    : Number(process.env.FITS_CONCURRENCY ?? 6);
+  let stopped = false;
+  let cursor = 0;
+
+  const worker = async () => {
+    for (;;) {
+      if (stopped) return;
+      const cell = cells[cursor++];
+      if (!cell) return;
+      if (Date.now() > deadline) {
+        if (!stopped) {
+          stopped = true;
+          console.log(`\nWall budget reached. ${cells.length - done - discarded} cells left for the next pass — the graph resumes exactly here.`);
+        }
+        return;
+      }
+      // The spend cap is a HARD STOP, checked before every cell rather than only
+      // in the estimate. An estimate is a guess; this is the bill.
+      if (spend.usd >= CFG.SPEND_CAP_USD) {
+        if (!stopped) {
+          stopped = true;
+          console.error(`\nSpend cap $${CFG.SPEND_CAP_USD} reached at $${spend.usd.toFixed(3)}. Stopping. ${cells.length - done - discarded} cells left.`);
+        }
+        return;
+      }
+      await runOneCell(cell);
     }
+  };
+
+  async function runOneCell(cell: typeof cells[number]) {
     const label = `${cell.skill.id} x ${cell.model.key} [${cell.condition}]`;
-    process.stdout.write(`  ${label.padEnd(52)} ${String(cell.calls).padStart(4)} calls … `);
 
     let out;
     try {
@@ -453,10 +539,10 @@ async function main() {
         inputs: { skill: cell.skill.id, model: cell.model.key, condition: cell.condition, digest: cell.digest },
         rows: [], discarded: why, completed_at: new Date().toISOString(), wall_ms: 0, spend_usd: 0,
       });
-      console.log(`VOID\n      ${why}`);
+      console.log(`  ${label.padEnd(52)} VOID — ${why.slice(0, 60)}`);
       store.logRun({ event: "cell_void", run_id: runId, cell: cell.key, reason: why });
       discarded++;
-      continue;
+      return;
     }
 
     if (out.discarded) {
@@ -466,9 +552,9 @@ async function main() {
         rows: [], discarded: out.discarded, completed_at: new Date().toISOString(), wall_ms: out.wall, spend_usd: 0,
       });
       store.appendTranscripts(out.transcripts);
-      console.log(`stopped — ${out.discarded.slice(0, 70)}`);
+      console.log(`  ${label.padEnd(52)} stopped — ${out.discarded.slice(0, 60)}`);
       discarded++;
-      continue;
+      return;
     }
 
     const pass = out.rows.filter((r) => r.pass_substance).length / (out.rows.length || 1);
@@ -486,10 +572,14 @@ async function main() {
     const med = out.rows.map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
     const p50 = med.length ? `${(med[Math.floor(med.length / 2)] / 1000).toFixed(1)}s` : "—";
     console.log(
+      `  ${label.padEnd(52)} ${String(cell.calls).padStart(4)} calls  ` +
       `pass ${pass.toFixed(2)}  p50 ${p50}  $${spend.usd.toFixed(3)}` +
       (boring ? `  ⚠ ${boring} BORING — harness suspect, not a model verdict` : ""),
     );
   }
+
+  console.log(`\nrunning ${cells.length} cells, ${laneConcurrency} at a time\n`);
+  await Promise.all(Array.from({ length: Math.min(laneConcurrency, cells.length) }, worker));
 
   store.logRun({ event: "run_end", run_id: runId, cells_done: done, cells_discarded: discarded, spend_usd: spend.usd });
   console.log(`\n${done} cells landed · ${discarded} discarded · $${spend.usd.toFixed(3)} spent\n`);

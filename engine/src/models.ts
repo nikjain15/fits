@@ -9,31 +9,49 @@
  * in the data instead of being invisible on the site.
  */
 import type { ModelSpec, SizeClass } from "./types.ts";
+import { has } from "./secrets.ts";
 
 export const MODELS: ModelSpec[] = [
   // ---- hosted, OpenRouter --------------------------------------------------
-  { key: "qwen2.5-0.5b", id: "qwen/qwen-2.5-0.5b-instruct", cls: "0.5B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Floor of the range." },
+  //
+  // RESOLVED AGAINST THE LIVE CATALOG on 2026-08-29, not written from memory.
+  // Six ids in the first draft of this file had been WITHDRAWN since it was
+  // written: qwen-2.5-0.5b, gemma-3-1b, qwen-2.5-1.5b, qwen-2.5-3b, qwen3-4b,
+  // phi-4-mini-instruct, mistral-7b-instruct, gemma-2-9b. That is the reason the
+  // brief says never to hardcode a model list, and the withdrawals are recorded
+  // in WITHDRAWN below rather than quietly deleted — a class that lost its second
+  // model stopped being a range, and that has to be visible.
+  //
+  // SELECTION RULE, applied uniformly so this is not cherry-picking:
+  //   in    general-purpose instruction-tuned models with a stated parameter count
+  //   out   :free  (rate-limited, and several mandate reasoning that cannot be
+  //                 disabled — that measures decode settings, not model size)
+  //   out   :batch duplicates of a model already listed
+  //   out   task specialists — translation (hy-mt2), GUI agents (ui-tars),
+  //         safety classifiers (llama-guard), vision-only and roleplay tunes
+  //         (lunaris, mythomax, remm-slerp, aion-rp). They are real 8B models,
+  //         but they are not what anyone installs a skill onto.
 
-  { key: "llama-3.2-1b", id: "meta-llama/llama-3.2-1b-instruct", cls: "1B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Below the 4B floor of arXiv 2602.16653. No native tool-calling on this provider. Prior run: strict pass 0.0% over 360 runs." },
-  { key: "gemma-3-1b", id: "google/gemma-3-1b-it", cls: "1B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Second model in the 1B class, so 1B is a range and not a point." },
-
-  { key: "qwen2.5-1.5b", id: "qwen/qwen-2.5-1.5b-instruct", cls: "1.5B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
+  { key: "llama-3.2-1b", id: "meta-llama/llama-3.2-1b-instruct", cls: "1B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Below the 4B floor of arXiv 2602.16653. Prior run: strict pass 0.0% over 360 runs — it never emitted one valid tool call. Only 1B left in the catalog, so 1B is a point, not a range." },
 
   { key: "llama-3.2-3b", id: "meta-llama/llama-3.2-3b-instruct", cls: "3B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
-  { key: "qwen2.5-3b", id: "qwen/qwen-2.5-3b-instruct", cls: "3B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
+  { key: "ministral-3b", id: "mistralai/ministral-3b-2512", cls: "3B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Second model in the 3B class, so 3B is a range." },
 
-  { key: "gemma-3-4b", id: "google/gemma-3-4b-it", cls: "4B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Replication anchor: same family/size as the paper's 0.78 skill-selection figure; we measured 0.829. No native tool-calling on this provider." },
-  { key: "qwen3-4b", id: "qwen/qwen3-4b", cls: "4B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: true, note: "The second 4B. The whole reason the badge cannot read '4B+' off one model." },
-  { key: "phi-4-mini", id: "microsoft/phi-4-mini-instruct", cls: "4B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Third 4B." },
+  { key: "gemma-3-4b", id: "google/gemma-3-4b-it", cls: "4B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Replication anchor: same family/size as the paper's 0.78 skill-selection figure; we measured 0.829. The only 4B left in the catalog — the class people actually run is a POINT, and the site must say so." },
 
-  { key: "mistral-7b", id: "mistralai/mistral-7b-instruct", cls: "7B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
-  { key: "qwen2.5-7b", id: "qwen/qwen-2.5-7b-instruct", cls: "7B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Hosted counterpart of the local q4_K_M artifact — the pair that makes the quantization delta measurable." },
+  { key: "qwen2.5-7b", id: "qwen/qwen-2.5-7b-instruct", cls: "7B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Hosted counterpart of the local q4_K_M artifact. This pair is the whole quantization delta: same weights, different precision, and the gap between them is what a laptop user actually gets." },
 
-  { key: "qwen3-8b", id: "qwen/qwen3-8b", cls: "8B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: true, note: "Above the 4B floor, below the 12B robustness threshold. Hybrid thinking model — reasoning explicitly disabled." },
+  // The 8B class is the one that can answer the question the product exists for:
+  // four real models, same badge. If they disagree, '8B+' is not a label.
+  { key: "qwen3-8b", id: "qwen/qwen3-8b", cls: "8B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: true, note: "Hybrid thinking model — reasoning explicitly disabled, or we would measure decode settings." },
   { key: "llama-3.1-8b", id: "meta-llama/llama-3.1-8b-instruct", cls: "8B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
+  { key: "granite-4.1-8b", id: "ibm-granite/granite-4.1-8b", cls: "8B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Third 8B, different vendor lineage entirely." },
+  { key: "ministral-8b", id: "mistralai/ministral-8b-2512", cls: "8B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Fourth 8B." },
 
-  { key: "gemma-2-9b", id: "google/gemma-2-9b-it", cls: "9B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
-  { key: "mistral-nemo-12b", id: "mistralai/mistral-nemo", cls: "12B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Top of the range that fits a 16GB laptop at q4, and alone at that." },
+  { key: "qwen3.5-9b", id: "qwen/qwen3.5-9b", cls: "9B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: true, note: "" },
+
+  { key: "gemma-3-12b", id: "google/gemma-3-12b-it", cls: "12B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "" },
+  { key: "mistral-nemo-12b", id: "mistralai/mistral-nemo", cls: "12B", lane: "hosted", provider: "openrouter", quantization: "unknown", sendTemperature: true, disableReasoning: false, note: "Top of the range that fits a 16GB laptop at q4." },
 
   {
     key: "claude-sonnet-5", id: "anthropic/claude-sonnet-5", cls: "frontier", lane: "hosted",
@@ -60,6 +78,24 @@ export const MODELS: ModelSpec[] = [
 export const byKey = (k: string) => MODELS.find((m) => m.key === k);
 
 /** Models in a class, in the order they are declared. A class is a range. */
+/**
+ * Ids that were in this roster and are no longer in the live catalog. Kept so a
+ * class that LOST a model is visible as a loss rather than looking like a class
+ * we never bothered to fill. A hosted model can vanish with no notice — which is
+ * the same problem as one changing silently underneath a stable id, and the
+ * reason the canary suite exists.
+ */
+export const WITHDRAWN: Array<{ id: string; cls: SizeClass; noticed: string }> = [
+  { id: "qwen/qwen-2.5-0.5b-instruct", cls: "0.5B", noticed: "2026-08-29" },
+  { id: "google/gemma-3-1b-it", cls: "1B", noticed: "2026-08-29" },
+  { id: "qwen/qwen-2.5-1.5b-instruct", cls: "1.5B", noticed: "2026-08-29" },
+  { id: "qwen/qwen-2.5-3b-instruct", cls: "3B", noticed: "2026-08-29" },
+  { id: "qwen/qwen3-4b", cls: "4B", noticed: "2026-08-29" },
+  { id: "microsoft/phi-4-mini-instruct", cls: "4B", noticed: "2026-08-29" },
+  { id: "mistralai/mistral-7b-instruct", cls: "7B", noticed: "2026-08-29" },
+  { id: "google/gemma-2-9b-it", cls: "9B", noticed: "2026-08-29" },
+];
+
 export function inClass(cls: SizeClass): ModelSpec[] {
   return MODELS.filter((m) => m.cls === cls);
 }
@@ -69,7 +105,7 @@ export function inClass(cls: SizeClass): ModelSpec[] {
 export function available(): { runnable: ModelSpec[]; blocked: Array<{ model: ModelSpec; reason: string }> } {
   const runnable: ModelSpec[] = [];
   const blocked: Array<{ model: ModelSpec; reason: string }> = [];
-  const hasKey = Boolean(process.env.OPENROUTER_API_KEY);
+  const hasKey = has("OPENROUTER_API_KEY");
   const localPulled = (process.env.FITS_LOCAL_MODELS ?? "gemma2:2b,qwen2.5:7b-instruct-q4_K_M")
     .split(",").map((s) => s.trim());
 

@@ -105,3 +105,42 @@ export function servedMatches(requested: string, served: string): boolean {
   const norm = (s: string) => s.trim().toLowerCase().replace(/:(free|nitro|floor|extended)$/i, "");
   return norm(requested) === norm(served);
 }
+
+/**
+ * Retry transient faults, and ONLY transient faults.
+ *
+ * FITS.md §11.6 records that an early run of the prior experiment showed 16.5%
+ * BORING and every single one was its own rate-limiting and connection handling
+ * rather than anything about the corpus. The zero-BORING result that settled
+ * assumption #6 was only earned by chasing those out. This build reproduced the
+ * fault immediately on its first hosted call — 3 of 7 runs came back 429 — and a
+ * grid launched in that state would have spent the whole budget measuring
+ * OpenRouter's rate limiter.
+ *
+ * What is retried: 429 and network faults. Both are ours to absorb.
+ * What is NOT: context overflow (a real finding about the skill), a cached
+ * response, and a provider substitution. Retrying those would paper over exactly
+ * the three things the harness exists to catch.
+ */
+export async function withRetry<T>(
+  label: string,
+  fn: () => Promise<T>,
+  attempts = 5,
+): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      last = e;
+      const kind = e instanceof ProviderError ? e.kind : "";
+      if (kind !== "network") throw e;
+      if (i === attempts - 1) break;
+      // Full jitter. A fixed backoff synchronises every worker onto the same
+      // retry instant and re-trips the limit that caused the wait.
+      const base = Math.min(30_000, 1_500 * 2 ** i);
+      await new Promise((r) => setTimeout(r, Math.random() * base + 250));
+    }
+  }
+  throw last;
+}

@@ -23,6 +23,7 @@
  * whose model has been withdrawn is recorded as unavailable rather than dropped.
  */
 import { ProviderError, assertHonest, type CompletionReply, type CompletionRequest, type Provider } from "./index.ts";
+import { secret, redact } from "../secrets.ts";
 
 const BASE = "https://openrouter.ai/api/v1";
 
@@ -37,11 +38,12 @@ export interface CatalogEntry {
 let catalog: Map<string, CatalogEntry> | null = null;
 
 function key(): string {
-  const k = process.env.OPENROUTER_API_KEY;
+  const k = secret("OPENROUTER_API_KEY");
   if (!k) {
     throw new ProviderError(
-      "OPENROUTER_API_KEY is not set. The hosted lane cannot run. Nothing was " +
-      "fabricated: affected cells are recorded as not-run.",
+      "OPENROUTER_API_KEY is not set. Looked in the environment, ~/.fits.env and the " +
+      "macOS keychain. The hosted lane cannot run; affected cells are recorded as " +
+      "not-run and nothing is fabricated.",
       "provider",
     );
   }
@@ -126,7 +128,7 @@ export const openrouter: Provider = {
         signal: ac.signal,
       });
     } catch (e: any) {
-      throw new ProviderError(`openrouter network: ${e?.message ?? e}`, "network");
+      throw new ProviderError(redact(`openrouter network: ${e?.message ?? e}`), "network");
     } finally {
       clearTimeout(timer);
     }
@@ -137,7 +139,7 @@ export const openrouter: Provider = {
       if (/context|too long|maximum.*token/i.test(txt)) {
         throw new ProviderError(`context: ${txt.slice(0, 200)}`, "context_overflow");
       }
-      throw new ProviderError(`openrouter ${res.status}: ${txt.slice(0, 200)}`, "provider");
+      throw new ProviderError(redact(`openrouter ${res.status}: ${txt.slice(0, 200)}`), "provider");
     }
 
     const j = (await res.json()) as any;

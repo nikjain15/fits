@@ -31,6 +31,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "./corpus.ts";
+import { secret } from "./secrets.ts";
 
 const DIR = join(REPO_ROOT, "data", "corpus");
 const INDEX = join(DIR, "skills.jsonl");
@@ -58,7 +59,7 @@ export interface CatalogueEntry {
 
 // ---------------------------------------------------------------------------
 
-const TOKEN = process.env.GITHUB_TOKEN ?? "";
+const TOKEN = secret("GITHUB_TOKEN") ?? "";
 
 async function gh(path: string, params: Record<string, string | number> = {}): Promise<any> {
   const url = new URL(`https://api.github.com${path}`);

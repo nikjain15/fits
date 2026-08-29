@@ -26,11 +26,12 @@
  * single response for the rest of the run.
  */
 import { ProviderError, assertHonest, type CompletionReply, type CompletionRequest, type Provider } from "./index.ts";
+import { secret } from "../secrets.ts";
 
-const BASE = process.env.CONDUIT_BASE_URL ?? "";
+const BASE = secret("CONDUIT_BASE_URL") ?? "";
 
 export function configured(): boolean {
-  return Boolean(BASE && process.env.CONDUIT_API_KEY);
+  return Boolean(BASE && secret("CONDUIT_API_KEY"));
 }
 
 /**
@@ -81,7 +82,7 @@ export const conduit: Provider = {
     const res = await fetch(`${BASE}/v1/chat/completions`, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${process.env.CONDUIT_API_KEY}`,
+        authorization: `Bearer ${secret("CONDUIT_API_KEY")}`,
         "content-type": "application/json",
         // Belt: ask the gateway not to serve or write cache for this request.
         // Braces: assertHonest checks the answer regardless of what we asked.

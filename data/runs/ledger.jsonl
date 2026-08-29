@@ -13,3 +13,7 @@
 {"event":"run_start","run_id":"73dc247d","cells":1,"est_calls":103.32,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T09:28:06.458Z"}
 {"event":"run_start","run_id":"e66b7cd8","cells":1,"est_calls":103.32,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T09:30:11.076Z"}
 {"event":"run_end","run_id":"e66b7cd8","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T09:35:33.127Z"}
+{"event":"run_start","run_id":"00015c27","cells":1,"est_calls":14.42,"est_usd":0.0019248536999999998,"models":["gemma-3-4b"],"ts":"2026-08-29T13:13:29.063Z"}
+{"event":"run_end","run_id":"00015c27","cells_done":1,"cells_discarded":0,"spend_usd":0.00091745,"ts":"2026-08-29T13:13:41.488Z"}
+{"event":"run_start","run_id":"9e83a0a3","cells":1,"est_calls":14.42,"est_usd":0.0019248536999999998,"models":["gemma-3-4b"],"ts":"2026-08-29T13:14:21.567Z"}
+{"event":"run_end","run_id":"9e83a0a3","cells_done":1,"cells_discarded":0,"spend_usd":0.0016936999999999998,"ts":"2026-08-29T13:15:02.271Z"}

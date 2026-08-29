@@ -1,32 +1,37 @@
 # Fits — 2026-08-29
 
-729 runs · 21 cells · 19 skills · 2 models · lane local
+2,214 runs · 72 cells · 20 skills · 2 models · lane local
 
 ## What broke
 - cell void — `anthropic__pdf × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `tenglin__notebooklm × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `agents365__drawio × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `kepano__json-canvas × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `gws__gws-gmail-send × qwen2.5-7b-q4km`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `kdense__biopython × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `anthropic__xlsx × gemma2-2b-q4_0`: stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate.
-- cell void — `addyosmani__browser-devtools × gemma2-2b-q4_0`: stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.
 
 ## What moved
-- Nothing moved. Every cell that existed yesterday still reads the same.
+- Nothing moved. First pass — there is no yesterday to compare against.
 
 ## What is new
-- No new cells.
-- Classes present in the data: 7B, 2.6B.
+- 72 cells measured for the first time.
+  - `gws__gws-calendar-insert` — 4 cells
+  - `kdense__biopython` — 4 cells
+  - `anthropic__pdf` — 4 cells
+  - `vercel__cli-tokens` — 4 cells
+  - `gws__gws-sheets` — 4 cells
+  - `kepano__defuddle` — 4 cells
+  - `anthropic__webapp-testing` — 4 cells
+  - `kepano__json-canvas` — 4 cells
+  - `anthropic__docx` — 4 cells
+  - `anthropic__xlsx` — 4 cells
+  - `gws__gws-drive-upload` — 4 cells
+  - `browseract__amazon-product-detail` — 4 cells
+- Classes present in the data: 2.6B, 7B.
 
 ## What it cost
 - $0.0000 this dataset. The local lane costs nothing but electricity and wall-clock.
 
 ## Latency, cold against warm
-- Largest cold/warm gap: `tenglin__notebooklm × qwen2.5-7b-q4km` — **164.1s on the first run** against 4.5s median, **36×**. The first run pays full prompt evaluation; every run after it reuses the runtime's KV prefix cache because the system prompt is identical. Both numbers are published and never merged — you feel the cold one the first time you run a skill.
+- Largest cold/warm gap: `vercel__cli-tokens × gemma2-2b-q4_0` — **29.0s on the first run** against 0.7s median, **42×**. The first run pays full prompt evaluation; every run after it reuses the runtime's KV prefix cache because the system prompt is identical. Both numbers are published and never merged — you feel the cold one the first time you run a skill.
 
 ## One finding
-Nothing moved and nothing new landed.
+72 cells measured for the first time. **No size class disagreed with itself yet** — every class in this dataset has only one model in it, so there is nothing a class-level badge could be wrong about. That changes the moment a second model joins a class.
 
 ---
 Chosen by a fixed rule — the largest verdict flip whose intervals separate, on the most-starred skill — and never by a model writing copy. A night that produced nothing says so.

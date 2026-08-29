@@ -25,11 +25,11 @@ built on the 7 cases. See `engine/src/stats.ts`.
 The one real failure was `pdf-3`: the model read the file correctly and summed
 12+7+23 to **32**. A REASONING failure, and the kind no rewrite fixes.
 
-## Three harness bugs found before any number was trusted
+## Four harness bugs found before any number was trusted
 
 The prior experiment needed twelve fixes to move one figure from 0.496 to 0.829
 with nothing about the subject changing. Every surprising result here was treated
-as our bug first. Three were.
+as our bug first. Four were, and the fourth is the one that matters.
 
 1. **`use_result` demanded a specific reader.** A model that ran
    `cat /work/sizes.csv` through the `bash` tool got the data and answered
@@ -43,11 +43,50 @@ as our bug first. Three were.
    and `REASONING` was unreachable. A model that answers 32 for 12+7+23 did not
    ignore the result. Fixed; attribution is unaffected because both map to MODEL.
 
-3. **Ollama silently truncates an oversized prompt** rather than erroring. A
-   41,000-character skill file would have been cut in half and we would have
-   published a pass rate for a skill the model never read — the same class of
-   fault as a substituted model. The context window is now pinned per model and
-   overflow is detected and reported as overflow, never as a low score.
+3. **Ollama silently truncates an oversized prompt** rather than erroring. The
+   context window is now pinned per model rather than inherited.
+
+4. **The guard for (3) did not work, and the dataset proved it.** This is the
+   most dangerous failure mode in the harness, because a truncated call looks
+   exactly like a clean result: it has a pass rate, a latency, and no BORING.
+
+   Ollama reports the count two different ways, and the first guard — which
+   watched for a prompt that *filled* the window — caught neither. Both observed
+   directly on this machine:
+
+   | | reported | window | needle at the start |
+   |---|---:|---:|---|
+   | `agents365__drawio` | 26,594 | 16,384 | — (above the window) |
+   | 20,000-token probe | 2,050 | 4,096 | **gone; the model answered garbage** |
+
+   The root cause of missing it was mine: `input_tokens` was being accumulated
+   *across steps*, and I read it as a per-call figure. Fixed in four places —
+   the guard checks both shapes against the size actually sent; every row records
+   `max_prompt_tokens`, the largest single call; `publish.ts` asserts the
+   invariant independently so it holds whatever any node on disk contains, and
+   drops rows it cannot decide rather than trusting them; and **the window is now
+   each model's real maximum**. 16,384 was our setting, not qwen2.5's limit —
+   reporting "this skill does not fit this model" would have blamed the model for
+   our configuration, a config label wearing a min-spec badge.
+
+   Eight cells are in `data/quarantine/` with the record of why, and re-measured.
+
+## The scope axis, measured
+
+Re-running every skill with all 20 skill *descriptions* in scope — descriptions
+only, never bodies, because that is what a client actually loads at startup under
+progressive disclosure (`docs/skill-format.md` §2).
+
+| model | 1 skill in scope | all 20 | change |
+|---|---:|---:|---:|
+| `gemma2:2b` (2.6B) | 0.222 | 0.234 | **+1.2pp** |
+| `qwen2.5-7b-q4_K_M` (7B) | 0.812 | 0.672 | **−14.1pp** |
+
+The reference dataset found the same *shape* — band-limited, not a flat rule —
+at a different point: llama-3.2-1b −3.3pp, gemma-3-4b −16.1pp, qwen3-8b −3.9pp.
+The small model has nothing left to lose because it was already failing before
+skill choice mattered; the capable one degrades sharply. Two measured points, and
+we do not interpolate between them.
 
 ## What the night is doing
 

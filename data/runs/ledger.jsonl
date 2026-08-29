@@ -1,0 +1,15 @@
+{"event":"run_start","run_id":"4d7d63eb","cells":1,"est_calls":126,"est_usd":0,"models":["qwen2.5-7b-q4km"],"ts":"2026-08-29T03:33:10.189Z"}
+{"event":"run_end","run_id":"4d7d63eb","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T03:42:56.178Z"}
+{"event":"run_start","run_id":"4c4e7851","cells":1,"est_calls":206.64,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T03:42:56.918Z"}
+{"event":"run_end","run_id":"4c4e7851","cells_done":0,"cells_discarded":1,"spend_usd":0,"ts":"2026-08-29T03:44:09.953Z"}
+{"event":"run_start","run_id":"213f2bb6","cells":40,"est_calls":1889.279999999999,"est_usd":0,"models":["gemma2-2b-q4_0","qwen2.5-7b-q4km"],"ts":"2026-08-29T03:44:10.365Z"}
+{"event":"run_end","run_id":"213f2bb6","cells_done":21,"cells_discarded":19,"spend_usd":0,"ts":"2026-08-29T05:24:45.426Z"}
+{"event":"run_start","run_id":"0f9b1941","cells":59,"est_calls":2789.640000000002,"est_usd":0,"models":["gemma2-2b-q4_0","qwen2.5-7b-q4km"],"ts":"2026-08-29T05:24:46.419Z"}
+{"event":"run_end","run_id":"0f9b1941","cells_done":51,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T07:55:24.972Z"}
+{"event":"run_start","run_id":"033c5914","cells":8,"est_calls":413.2799999999999,"est_usd":0,"models":["gemma2-2b-q4_0","qwen2.5-7b-q4km"],"ts":"2026-08-29T07:55:53.245Z"}
+{"event":"run_end","run_id":"033c5914","cells_done":8,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T08:26:40.324Z"}
+{"event":"run_start","run_id":"caca3662","cells":8,"est_calls":354.2399999999999,"est_usd":0,"models":["gemma2-2b-q4_0","qwen2.5-7b-q4km"],"ts":"2026-08-29T08:26:42.877Z"}
+{"event":"run_end","run_id":"caca3662","cells_done":8,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T09:02:23.233Z"}
+{"event":"run_start","run_id":"73dc247d","cells":1,"est_calls":103.32,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T09:28:06.458Z"}
+{"event":"run_start","run_id":"e66b7cd8","cells":1,"est_calls":103.32,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T09:30:11.076Z"}
+{"event":"run_end","run_id":"e66b7cd8","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T09:35:33.127Z"}

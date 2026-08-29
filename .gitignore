@@ -1,7 +1,15 @@
 node_modules/
-data/nodes/
-data/runs/
-*.log
 .env
 .env.*
 !.env.example
+
+# Logs and process bookkeeping — noise, not evidence.
+*.log
+data/runs/*.out
+data/runs/*.pid
+data/runs/last-digest-snapshot.json
+
+# The node store and the transcripts ARE the evidence and are committed:
+# every published number is reproducible from data/nodes/, and every run is
+# readable verbatim in data/runs/transcripts.jsonl. They are the reason anyone
+# should believe a rate on the site.

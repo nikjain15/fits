@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "serve": "tsx engine/src/serve.ts",
     "enrich": "tsx engine/src/enrich.ts",
-    "publish": "tsx engine/src/publish.ts"
+    "publish": "tsx engine/src/publish.ts",
+    "build:web": "node engine/build-web.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

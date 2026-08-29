@@ -1,3 +1,5 @@
+import { byok, keyLooksValid, checkKey, runInBrowser } from './byok.js';
+
 /* ===========================================================================
    Fits — the site.
    Ported from fits-mockup.html, which is the visual spec. Read-only over static
@@ -567,6 +569,7 @@ function scopeSection(sk) {
  * faking it here would be the one dishonesty the whole product is against.
  */
 let ENGINE = null;        // null = unknown, false = absent, object = present
+let BYOK = { open: false, checking: false, status: null, models: [], trials: 2, res: null, cases: [], provenance: [], error: '' };
 let JOB = null;
 let jobTimer = null;
 
@@ -609,8 +612,86 @@ async function startRun(url) {
   }
 }
 
+/* ---- bring your own key ------------------------------------------------- */
+
+function renderByokSetup(name) {
+  const st = BYOK.status;
+  return `<div class="wrap"><h1>${name}</h1>
+    <div class="dsub">test from this page with your own OpenRouter key</div>
+
+    <div class="ok0" style="margin-top:18px">
+      <b>Where your key goes.</b> Into this browser's local storage, and to <span class="mono">openrouter.ai</span> — nowhere else.
+      It never reaches this project: this is a static page on GitHub Pages and there is no server here that could receive it.
+      It is never put in a URL, a log or an error message. <span class="lnk" data-byok-forget>Forget it</span> clears it immediately.
+    </div>
+
+    <div class="paste" style="margin-top:18px">
+      <input id="orkey" type="password" placeholder="sk-or-v1-…" value="${esc(byok.key)}" autocomplete="off" spellcheck="false">
+      <button class="go" data-byok-check ${BYOK.checking ? 'disabled' : ''}>${BYOK.checking ? 'checking…' : 'Check key'}</button>
+    </div>
+    <div class="note">Get one at <span class="mono">openrouter.ai/settings/keys</span>. Set a spend limit on it — this page cannot enforce one for you.</div>
+
+    ${BYOK.error ? `<div class="alarm" style="margin-top:14px"><b>Not usable.</b> ${esc(BYOK.error)}</div>` : ''}
+    ${st && st.ok ? `<div class="ok0" style="margin-top:14px"><b>Key works.</b> ${st.limit === null
+        ? 'No hard limit set on it — consider setting one at openrouter.ai.'
+        : `$${st.remaining.toFixed(2)} of $${st.limit.toFixed(2)} remaining.`}
+      A run below is roughly ${(0.0006 * BYOK.trials * 3).toFixed(4)}–${(0.01 * BYOK.trials * 3).toFixed(3)} depending on the models you pick.</div>` : ''}
+
+    <div class="note t"><span class="lnk" data-cancel>back</span></div>
+    ${footer()}</div>`;
+}
+
+function renderByokRun(name) {
+  const res = BYOK.res || [];
+  const picked = BYOK.models;
+  return `<div class="wrap"><h1>${name}</h1>
+    <div class="dsub">your key · your browser · your result</div>
+
+    <div class="ok0" style="margin-top:16px"><b>This result is yours, and is not published.</b>
+      Nobody but you can verify a run that happened in your browser — we cannot see the transcript, cannot confirm the model was not substituted beyond what the response claims, and cannot reproduce it.
+      An unverifiable row inside a published rate is worth less than no row, so this stays here and is never folded into the corpus figures.
+      The engine is the same bundle the server uses, so the verdict is reached by the same rules.</div>
+
+    ${!res.length ? `
+      <div class="sec" style="margin-top:22px"><div class="sh">Pick models</div>
+        <div class="chips">${M.filter(m => m.id && m.lane === 'hosted').map(m =>
+          `<button class="tog ${picked.some(p => p.key === m.m) ? 'on' : ''}" data-byok-model="${esc(m.m)}">${esc(m.cls)} <span class="dim">${esc(m.m)}</span></button>`).join('')}</div>
+        <div class="chips" style="margin-top:8px"><span class="dim" style="font-size:11.5px;align-self:center">trials per case</span>
+          ${[1, 2, 3].map(t => `<button class="tog ${BYOK.trials === t ? 'on' : ''}" data-byok-trials="${t}">${t}</button>`).join('')}</div>
+        <div class="note t">3 cases × ${BYOK.trials} trials × ${picked.length || 0} model${picked.length === 1 ? '' : 's'} = <b>${3 * BYOK.trials * (picked.length || 0)} calls</b>. A published cell is 126, so this comes back with a wide interval and says so.</div>
+        <div style="margin-top:14px">
+          <button class="btn ac" data-byok-go ${picked.length ? '' : 'disabled'}>Run it</button>
+          <span class="lnk" style="margin-left:14px" data-byok-forget>forget my key</span>
+        </div></div>` : ''}
+
+    ${BYOK.error ? `<div class="alarm" style="margin-top:16px"><b>Stopped.</b> ${esc(BYOK.error)}</div>` : ''}
+    ${BYOK.message ? `<div class="note t">${esc(BYOK.message)}</div>` : ''}
+
+    ${BYOK.cases.length ? `<div class="sec" style="margin-top:24px"><div class="sh">The cases, derived from the skill's own text</div>
+      ${BYOK.cases.map(c => `<div class="at" style="grid-template-columns:96px minmax(0,1fr)">
+        <span class="k">${esc(c.kind)}</span>
+        <span class="d">${esc(c.prompt)}<div class="sb" style="color:var(--fg4);margin-top:3px">${esc(c.rationale)}</div></span></div>`).join('')}</div>` : ''}
+
+    ${res.length ? `<div class="sec"><div class="sh">Result <span style="text-transform:none;letter-spacing:0;color:var(--fg3)">— yours, not published</span></div>
+      ${res.map(r => `<div class="rr"><span class="st ${r.state === 'running' ? 'go' : ''}">${r.state}</span>
+        <span><span class="mono">${esc(r.cls)}</span> <span class="dim" style="font-size:11px">${esc(r.model)}</span>
+          ${r.boring ? `<div class="sb" style="color:var(--warn)">${r.boring} BORING — that is our fault or the provider's, never a verdict on the skill</div>` : ''}</span>
+        <span class="mono" style="text-align:right;font-size:12px">${r.rate ? `${p2(r.rate.rate)}<div class="sb" style="color:var(--fg4)">${p2(r.rate.lo)}–${p2(r.rate.hi)} · n=${r.rows.length}</div>` : `${r.rows.length} runs`}
+          <div class="sb" style="color:var(--fg4)">$${r.cost.toFixed(4)}</div></span></div>`).join('')}
+      <div class="note t">Interval is 95%, from ${3 * BYOK.trials} runs per model. That is an eighth of a published cell, so read it as a direction and not a rate.</div>
+      <div style="margin-top:14px"><button class="btn" data-byok-again>Run another</button></div></div>` : ''}
+
+    <div class="note t"><span class="lnk" data-cancel>back</span></div>
+    ${footer()}</div>`;
+}
+
 function renderRun() {
   const name = esc(state.url.split('/').filter(Boolean).pop() || 'your skill');
+
+  // With no local engine, the page can still run a REAL test if the visitor
+  // brings their own OpenRouter key — the browser talks to OpenRouter directly.
+  if (ENGINE === false && byok.has()) return renderByokRun(name);
+  if (ENGINE === false && BYOK.open) return renderByokSetup(name);
 
   if (ENGINE === false) {
     return `<div class="wrap"><h1>${name}</h1>
@@ -623,6 +704,9 @@ function renderRun() {
         <span class="k">run</span><span class="v">npm run serve</span>
         <span class="k">then</span><span class="v">open localhost:8099 and paste the same URL</span></div></div>
       <div class="note t">The local engine uses whatever models you have — Ollama needs no key and costs nothing.</div>
+      <div class="sec" style="margin-top:26px"><div class="sh">Or test it from this page, with your own key</div>
+        <div class="note">Your browser can call OpenRouter directly. The key stays in this browser, goes only to OpenRouter, and never reaches this project — there is no server here that could receive it.</div>
+        <div style="margin-top:12px"><button class="btn ac" data-byok>Use my OpenRouter key</button></div></div>
       <div class="note t"><span class="lnk" data-cancel>back</span></div>
       ${footer()}</div>`;
   }
@@ -678,6 +762,45 @@ document.addEventListener('click', e => {
   if (t('[data-fm]')) { dstate.fm = +t('[data-fm]').dataset.fm; render(); return; }
   if (t('[data-rung]')) { const k = +t('[data-rung]').dataset.rung; dstate.openRung = dstate.openRung === k ? null : k; render(); return; }
   if (t('[data-t]')) { const k = t('[data-t]').dataset.t; if (k === 'strict') BAR.strict = !BAR.strict; else state[k] = !state[k]; render(); return; }
+  if (t('[data-byok]')) { BYOK.open = true; BYOK.error = ''; render(); return; }
+  if (t('[data-byok-forget]')) { byok.forget(); BYOK = { ...BYOK, open: true, status: null, res: null, cases: [], error: '' }; render(); return; }
+  if (t('[data-byok-check]')) {
+    const el = document.getElementById('orkey');
+    const k = (el ? el.value : '').trim();
+    if (!keyLooksValid(k)) { BYOK.error = 'That is not the shape of an OpenRouter key (sk-or-v1- followed by ~64 characters). Nothing was sent.'; render(); return; }
+    BYOK.checking = true; BYOK.error = ''; render();
+    checkKey(k).then(st => {
+      BYOK.checking = false;
+      if (!st.ok) { BYOK.error = st.reason; BYOK.status = null; }
+      else { byok.key = k; BYOK.status = st; BYOK.open = false; }
+      render();
+    }).catch(e => { BYOK.checking = false; BYOK.error = String(e.message || e); render(); });
+    return;
+  }
+  if (t('[data-byok-model]')) {
+    const k = t('[data-byok-model]').dataset.byokModel;
+    const m = M.find(x => x.m === k);
+    BYOK.models = BYOK.models.some(p => p.key === k)
+      ? BYOK.models.filter(p => p.key !== k)
+      : [...BYOK.models, { key: k, id: m.id, cls: m.cls, sendTemperature: true, disableReasoning: false }];
+    render(); return;
+  }
+  if (t('[data-byok-trials]')) { BYOK.trials = +t('[data-byok-trials]').dataset.byokTrials; render(); return; }
+  if (t('[data-byok-again]')) { BYOK.res = null; BYOK.cases = []; BYOK.message = ''; render(); return; }
+  if (t('[data-byok-go]')) {
+    BYOK.error = ''; BYOK.res = []; BYOK.message = 'starting'; render();
+    runInBrowser({
+      url: state.url, models: BYOK.models, trials: BYOK.trials,
+      onProgress: (p) => {
+        BYOK.message = p.message || '';
+        if (p.cases) BYOK.cases = p.cases;
+        if (p.provenance) BYOK.provenance = p.provenance;
+        if (p.results) BYOK.res = p.results.slice();
+        render();
+      },
+    }).catch(e => { BYOK.error = String(e.message || e); render(); });
+    return;
+  }
   if (t('[data-catall]')) { loadCatalogue(true); return; }
   if (t('[data-cat]')) { state.cat = t('[data-cat]').dataset.cat; render(); return; }
   if (t('[data-csort]')) { state.catSort = t('[data-csort]').dataset.csort; render(); return; }

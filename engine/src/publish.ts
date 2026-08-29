@@ -1,0 +1,190 @@
+/**
+ * Emits web/data/*.json. Pure: reads the node store, writes JSON.
+ *
+ * The shape is a superset of the mockup's embedded `D` blob, so the site is a
+ * port rather than a rewrite -- with the fields the mockup could not carry
+ * because it had no engine behind it: intervals, case counts, lanes,
+ * quantization, served provider, model digests, and the not-measured list.
+ *
+ * WHAT THIS FILE REFUSES TO EMIT
+ *   - a rate without n_cases, n_calls, lo and hi
+ *   - a size class averaged to a point
+ *   - a latency for a hosted cell
+ *   - a cell that was discarded, stopped early, or is over 20% BORING, as if it
+ *     were a measurement
+ *   - anything at all for a model that did not run: it appears in `not_measured`
+ *     with the reason, and nowhere else
+ */
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { REPO_ROOT, loadCorpus } from "./corpus.ts";
+import { MODELS, available } from "./models.ts";
+import * as store from "./store.ts";
+import { cells, markCeiling, modelSummary, classesFor, specFor, quantizationDeltas } from "./aggregate.ts";
+import { SIZE_CLASS_ORDER, HARNESS_VERSION, type Condition, type ResultRow } from "./types.ts";
+import { acceptance, suiteFor } from "./cases.ts";
+import { THIN_CALLS, THIN_CASES } from "./stats.ts";
+
+const OUT = join(REPO_ROOT, "web", "data");
+const BAR = Number(process.env.FITS_BAR ?? 0.80);
+
+function main() {
+  mkdirSync(OUT, { recursive: true });
+  const nodes = store.allNodes();
+  const rows: ResultRow[] = nodes.flatMap((n) => n.rows);
+
+  if (!rows.length) {
+    console.error("No rows in the node store. Nothing published — an empty dataset is not a zero.");
+    process.exit(1);
+  }
+
+  const { ceilingFailed, noCeiling } = markCeiling(rows);
+  const C = cells(rows);
+  const corpus = loadCorpus();
+  const { blocked } = available();
+
+  // ---- models actually present in the data ---------------------------------
+  const presentKeys = [...new Set(rows.map((r) => r.model))];
+  const M = MODELS.filter((m) => presentKeys.includes(m.key)).map((m) => {
+    const A = modelSummary(rows, m.key, "A");
+    const B = modelSummary(rows, m.key, "B");
+    const digest = rows.find((r) => r.model === m.key)?.model_digest ?? "";
+    const served = rows.find((r) => r.model === m.key)?.served_provider ?? "unknown";
+    return {
+      m: m.key, id: m.id, cls: m.cls, P: SIZE_CLASS_ORDER.indexOf(m.cls),
+      lane: m.lane, quantization: m.quantization, served_provider: served,
+      digest, is_ceiling: Boolean(m.isCeiling), note: m.note,
+      A, B,
+      bk: A?.buckets ?? {}, at: A?.attribution ?? {}, kd: A?.by_kind ?? {},
+      f1: A?.call_validity ?? 0, nd: A?.nd ?? 0,
+      // Whether the provider offers a native tool API is a deployment constraint
+      // that exists before any skill is written, and belongs on a min-spec label
+      // independently of skill quality.
+      native: m.lane === "local" ? false : !["gemma-3-4b", "llama-3.2-1b", "gemma-3-1b"].includes(m.key),
+      p50: A?.p50_ms ?? null,
+      latency_note: m.lane === "local" ? "" : "not_comparable: hosted latency is network + queue + batching",
+    };
+  }).sort((a, b) => a.P - b.P);
+
+  // ---- skills --------------------------------------------------------------
+  const skillIds = [...new Set(rows.map((r) => r.skill))];
+  const S: Record<string, unknown> = {};
+  for (const id of skillIds) {
+    const s = corpus.find((x) => x.id === id)!;
+    const acc = acceptance(id);
+    S[id] = {
+      repo: s.repo, url: s.url, stars: s.stars, chars: s.parsed.body_chars,
+      name: s.parsed.name, selection_chars: s.parsed.selection_chars,
+      license: s.parsed.license, license_ok: s.license_ok, license_note: s.license_note,
+      spec_conformance: s.parsed.spec_conformance, extra_fields: s.parsed.extra_fields,
+      content_hash: s.parsed.content_hash, discovered_via: s.discovered_via,
+      cases: suiteFor(id).length, suite_hash: acc.hash, suite_authored_by: acc.authored_by,
+      classes: classesFor(rows, id),
+      spec: specFor(rows, id, BAR),
+    };
+  }
+
+  // ---- cells ---------------------------------------------------------------
+  const Cout: Record<string, unknown> = {};
+  for (const [k, c] of C) {
+    Cout[k] = {
+      // The mockup's short keys, kept so the port is minimal...
+      n: c.substance.n_calls, sub: round(c.substance.rate), strict: round(c.strict.rate),
+      p50: c.p50_ms === null ? null : c.p50_ms / 1000,
+      bk: c.buckets, at: c.attribution,
+      kd: Object.fromEntries(Object.entries(c.by_kind).map(([k2, v]) => [k2, {
+        n: v.substance.n_calls, sub: round(v.substance.rate), strict: round(v.strict.rate),
+      }])),
+      // ...and the fields a bare number must never travel without.
+      n_cases: c.substance.n_cases,
+      lo: round(c.substance.lo), hi: round(c.substance.hi),
+      strict_lo: round(c.strict.lo), strict_hi: round(c.strict.hi),
+      thin: c.substance.thin, unstable: c.substance.unstable,
+      disagreement: round(c.substance.disagreement),
+      boring: c.boring, boring_share: round(c.boring_share), invalid: c.invalid,
+      lane: c.lane, quantization: c.quantization, digest: c.model_digest,
+      latency_note: c.latency_note,
+    };
+  }
+
+  // ---- what did NOT get measured, and why ----------------------------------
+  const measuredClasses = new Set(M.map((m) => m.cls));
+  const not_measured = {
+    classes: SIZE_CLASS_ORDER.filter((c) => !measuredClasses.has(c)),
+    models: blocked.map((b) => ({ key: b.model.key, id: b.model.id, cls: b.model.cls, reason: b.reason })),
+    note: "Absent, not estimated. A class with no measurement is shown nowhere on the site except here.",
+  };
+
+  const discarded = nodes.filter((n) => n.discarded).map((n) => ({
+    skill: n.inputs?.skill, model: n.inputs?.model, condition: n.inputs?.condition, reason: n.discarded,
+  }));
+
+  // ---- the manifest --------------------------------------------------------
+  const totalSpend = rows.reduce((a, r) => a + r.cost_usd, 0);
+  const boringTotal = rows.filter((r) => r.bucket === "BORING").length;
+  const substitutions = rows.filter((r) => r.served_model && r.served_model !== r.model_id).length;
+  const cachedRows = rows.filter((r) => r.cached).length;
+
+  const manifest = {
+    harness_version: HARNESS_VERSION,
+    generated: new Date().toISOString(),
+    bar: BAR,
+    runs: rows.length,
+    cells: C.size,
+    skills: skillIds.length,
+    cases: new Set(rows.map((r) => r.case)).size,
+    models: M.length,
+    lanes: [...new Set(rows.map((r) => r.lane))],
+    providers: [...new Set(rows.map((r) => r.served_provider))],
+    quantizations: [...new Set(rows.map((r) => r.quantization))],
+    digests: Object.fromEntries(M.map((m) => [m.m, m.digest])),
+    run_window: {
+      first: rows.map((r) => r.ts).sort()[0],
+      last: rows.map((r) => r.ts).sort().slice(-1)[0],
+    },
+    spend_usd: round(totalSpend, 4),
+    // The three things that invalidate everything below them if non-zero.
+    integrity: {
+      boring: boringTotal,
+      boring_share: round(boringTotal / rows.length, 4),
+      provider_substitutions: substitutions,
+      cached_responses: cachedRows,
+      verdict: boringTotal === 0 && substitutions === 0 && cachedRows === 0
+        ? "clean — zero BORING, no substitutions, no cached responses"
+        : "SUSPECT — see the counts above; a non-zero value here invalidates the numbers below it until chased down",
+    },
+    ceiling: {
+      present: M.some((m) => m.is_ceiling),
+      failed_cases: ceilingFailed,
+      no_verdict_cases: noCeiling,
+      note: M.some((m) => m.is_ceiling)
+        ? "Attribution computed only over cases the ceiling handled."
+        : "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed.",
+    },
+    quantization_delta: quantizationDeltas(rows),
+    discarded_cells: discarded,
+    not_measured,
+    thresholds: { thin_cases: THIN_CASES, thin_calls: THIN_CALLS },
+    protocol_note:
+      "A uniform text tool-call protocol is used across every model, because several models have no native tool API on their provider and a native harness would fail them 100% for a harness reason. A text protocol is HARDER than a native tool API, so absolute rates read low. The ranking and the failure mix are unaffected.",
+  };
+
+  const payload = { meta: manifest, M, S, C: Cout };
+
+  writeFileSync(join(OUT, "fits.json"), JSON.stringify(payload));
+  writeFileSync(join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
+  writeFileSync(join(OUT, "rows.json"), JSON.stringify(rows));
+
+  console.log(`published → web/data/`);
+  console.log(`  ${rows.length} rows · ${C.size} cells · ${skillIds.length} skills · ${M.length} models`);
+  console.log(`  lanes: ${manifest.lanes.join(", ")} · spend $${manifest.spend_usd}`);
+  console.log(`  integrity: ${manifest.integrity.verdict}`);
+  if (not_measured.classes.length) console.log(`  not measured: ${not_measured.classes.join(", ")}`);
+  if (discarded.length) console.log(`  ${discarded.length} discarded cells (not published as measurements)`);
+}
+
+function round(x: number, n = 4): number {
+  return Number.isFinite(x) ? Number(x.toFixed(n)) : 0;
+}
+
+main();

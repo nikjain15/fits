@@ -1,0 +1,77 @@
+# The nightly pass, hosted lane.
+#
+# Hosted inference means the engine needs no GPU, so the whole loop runs here.
+# The local Ollama lane runs on the Mac instead and commits into the same data/
+# tree with lane: local — it is allowed to be behind, and the site renders
+# correctly when a local counterpart is missing rather than implying parity.
+#
+# Order is the priority order: canary first (a drifted endpoint invalidates
+# everything measured against it), then empty cells, then thin ones, then stale.
+name: nightly
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 22:00 America/New_York
+  workflow_dispatch:
+    inputs:
+      budget_min: { description: "wall-clock budget, minutes", default: "120" }
+      spend_cap:  { description: "hard spend cap, USD", default: "5" }
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      FITS_SPEND_CAP: ${{ inputs.spend_cap || '5' }}
+      FITS_BUDGET_MIN: ${{ inputs.budget_min || '120' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+
+      - name: Refuse to run without a key
+        # Nothing is fabricated when the key is missing. The run stops and says
+        # so; affected cells stay recorded as not-run.
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::error::OPENROUTER_API_KEY is not set. Hosted lane cannot run; nothing was fabricated."
+            exit 1
+          fi
+
+      - name: Canary — has an endpoint changed underneath a stable model id?
+        run: npx tsx engine/src/canary.ts || echo "::warning::canary reported drift; affected cells are re-queued"
+
+      - name: Dry-run estimate
+        # Printed and recorded before anything is spent, every time.
+        run: npx tsx engine/src/run.ts --lane hosted --plan | tee dry-run.txt
+
+      - name: Measure
+        run: npx tsx engine/src/run.ts --lane hosted --yes
+
+      - name: Aggregate and publish
+        run: npx tsx engine/src/publish.ts
+
+      - name: Morning digest
+        run: npx tsx engine/src/digest.ts
+
+      - name: Commit results
+        run: |
+          git config user.name  "fits-engine"
+          git config user.email "noreply@github.com"
+          git add data/nodes data/runs/ledger.jsonl web/data web/digest
+          git diff --staged --quiet || git commit -m "nightly: $(date -u +%Y-%m-%d) hosted lane"
+          git push
+
+  deploy:
+    needs: measure
+    uses: ./.github/workflows/pages.yml

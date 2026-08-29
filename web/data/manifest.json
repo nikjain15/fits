@@ -1,0 +1,181 @@
+{
+  "harness_version": "fits-engine/0.1.0",
+  "generated": "2026-08-29T03:44:16.200Z",
+  "bar": 0.8,
+  "runs": 126,
+  "cells": 1,
+  "skills": 1,
+  "cases": 7,
+  "models": 1,
+  "lanes": [
+    "local"
+  ],
+  "providers": [
+    "ollama-local"
+  ],
+  "quantizations": [
+    "Q4_K_M"
+  ],
+  "digests": {
+    "qwen2.5-7b-q4km": "845dbda0ea48ed74"
+  },
+  "run_window": {
+    "first": "2026-08-29T03:33:43.532Z",
+    "last": "2026-08-29T03:42:56.169Z"
+  },
+  "spend_usd": 0,
+  "integrity": {
+    "boring": 0,
+    "boring_share": 0,
+    "provider_substitutions": 0,
+    "cached_responses": 0,
+    "verdict": "clean — zero BORING, no substitutions, no cached responses"
+  },
+  "ceiling": {
+    "present": false,
+    "failed_cases": [],
+    "no_verdict_cases": [
+      "pdf-1",
+      "pdf-2",
+      "pdf-3",
+      "pdf-4",
+      "pdf-5",
+      "pdf-6",
+      "pdf-7"
+    ],
+    "note": "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed."
+  },
+  "quantization_delta": [
+    {
+      "family": "qwen2.5-7b-instruct",
+      "measured": false,
+      "reason": "hosted side not measured — no OPENROUTER_API_KEY on this machine"
+    }
+  ],
+  "discarded_cells": [
+    {
+      "skill": "anthropic__pdf",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    }
+  ],
+  "not_measured": {
+    "classes": [
+      "0.5B",
+      "1B",
+      "1.5B",
+      "2.6B",
+      "3B",
+      "4B",
+      "8B",
+      "9B",
+      "12B",
+      "frontier"
+    ],
+    "models": [
+      {
+        "key": "qwen2.5-0.5b",
+        "id": "qwen/qwen-2.5-0.5b-instruct",
+        "cls": "0.5B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "llama-3.2-1b",
+        "id": "meta-llama/llama-3.2-1b-instruct",
+        "cls": "1B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "gemma-3-1b",
+        "id": "google/gemma-3-1b-it",
+        "cls": "1B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "qwen2.5-1.5b",
+        "id": "qwen/qwen-2.5-1.5b-instruct",
+        "cls": "1.5B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "llama-3.2-3b",
+        "id": "meta-llama/llama-3.2-3b-instruct",
+        "cls": "3B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "qwen2.5-3b",
+        "id": "qwen/qwen-2.5-3b-instruct",
+        "cls": "3B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "gemma-3-4b",
+        "id": "google/gemma-3-4b-it",
+        "cls": "4B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "qwen3-4b",
+        "id": "qwen/qwen3-4b",
+        "cls": "4B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "phi-4-mini",
+        "id": "microsoft/phi-4-mini-instruct",
+        "cls": "4B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "mistral-7b",
+        "id": "mistralai/mistral-7b-instruct",
+        "cls": "7B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "qwen2.5-7b",
+        "id": "qwen/qwen-2.5-7b-instruct",
+        "cls": "7B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "qwen3-8b",
+        "id": "qwen/qwen3-8b",
+        "cls": "8B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "llama-3.1-8b",
+        "id": "meta-llama/llama-3.1-8b-instruct",
+        "cls": "8B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "gemma-2-9b",
+        "id": "google/gemma-2-9b-it",
+        "cls": "9B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "mistral-nemo-12b",
+        "id": "mistralai/mistral-nemo",
+        "cls": "12B",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      },
+      {
+        "key": "claude-sonnet-5",
+        "id": "anthropic/claude-sonnet-5",
+        "cls": "frontier",
+        "reason": "OPENROUTER_API_KEY not set — hosted lane unavailable"
+      }
+    ],
+    "note": "Absent, not estimated. A class with no measurement is shown nowhere on the site except here."
+  },
+  "thresholds": {
+    "thin_cases": 20,
+    "thin_calls": 70
+  },
+  "protocol_note": "A uniform text tool-call protocol is used across every model, because several models have no native tool API on their provider and a native harness would fail them 100% for a harness reason. A text protocol is HARDER than a native tool API, so absolute rates read low. The ranking and the failure mix are unaffected."
+}

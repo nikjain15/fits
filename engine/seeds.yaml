@@ -1,0 +1,21 @@
+# Hand-maintained additions to automatic discovery.
+#
+# Two jobs:
+#  1. Repos the topic and code searches miss.
+#  2. Repos that FAIL the automatic licence check but are unambiguously public
+#     reference material. A literal "must have an OSI licence" filter excludes
+#     anthropics/skills — 172k stars, no LICENSE file at the repo root — and with
+#     it most of the existing corpus. Listing a repo here does NOT set
+#     license_ok; it stays false and the site shows a "no licence" pill. Nothing
+#     is silently included.
+#
+# See docs/skill-format.md §6.4.
+
+repos:
+  - anthropics/skills            # 172k★, license:null per the GitHub API
+  - addyosmani/agent-skills      # MIT; plugin.json with no $schema
+  - K-Dense-AI/scientific-agent-skills
+  - openclaw/openclaw            # bare skills/ directory, no plugin wrapper
+  - googleworkspace/cli
+  - vercel-labs/agent-skills
+  - kepano/obsidian-skills

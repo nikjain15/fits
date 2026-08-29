@@ -1,0 +1,22 @@
+{
+  "name": "fits",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimum system requirements for AI skills. Measures whether a published Agent Skill works on a small model, and what breaks when it does not.",
+  "scripts": {
+    "run": "tsx engine/src/run.ts",
+    "publish-data": "tsx engine/src/publish.ts",
+    "discover": "tsx engine/src/skills/discover.ts",
+    "digest": "tsx engine/src/digest.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

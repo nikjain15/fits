@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fits — min-spec for AI skills</title>
+<style>
+:root{--bg:#0b0d0f;--el:#121518;--el2:#171b1f;--hair:#1e2429;--hair2:#2a3138;
+--fg:#e8ecef;--fg2:#9aa3ab;--fg3:#6b747c;--fg4:#454d54;--ac:#f5b73d;--ac2:#7a5f1c;--acbg:rgba(245,183,61,.08);
+--warn:#d97757;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--sans:ui-sans-serif,-apple-system,"Segoe UI",Inter,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+.mono{font-family:var(--mono)}.dim{color:var(--fg3)}.dim2{color:var(--fg2)}
+.wrap{max-width:1060px;margin:0 auto;padding:26px 24px 90px}
+header{position:sticky;top:0;z-index:30;background:rgba(11,13,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--hair)}
+.hin{max-width:1060px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;row-gap:8px}
+.logo{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--ac);letter-spacing:-.4px}
+.lens{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.lens>span{font-size:11.5px;color:var(--fg3)}
+.mseg{display:flex;background:var(--el);border:1px solid var(--hair2);border-radius:7px;padding:2px}
+.mseg button{font-family:var(--mono);font-size:11.5px;padding:4px 9px;border-radius:5px;color:var(--fg3)}
+.mseg button:hover{color:var(--fg)}.mseg button.on{background:var(--ac);color:#17130a;font-weight:600}
+.barbtn{position:relative}
+.barbtn>button{font-family:var(--mono);font-size:11.5px;color:var(--fg2);border:1px solid var(--hair2);border-radius:7px;padding:5px 10px}
+.barbtn>button:hover,.barbtn>button.open{color:var(--ac);border-color:var(--ac2)}
+.pop{display:none;white-space:normal;position:absolute;right:0;top:34px;width:300px;max-width:calc(100vw - 30px);background:var(--el);border:1px solid var(--hair2);border-radius:10px;padding:17px 18px;box-shadow:0 16px 44px rgba(0,0,0,.6);z-index:40}
+.pop.on{display:block}
+.pop h4{margin:0 0 14px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--fg3);font-weight:600}
+.sl{margin-bottom:15px}.sl .lb{display:flex;justify-content:space-between;font-size:12px;color:var(--fg3);margin-bottom:6px}
+.sl .lb b{font-family:var(--mono);color:var(--ac);font-weight:500}
+.pop input[type=range]{width:100%;accent-color:var(--ac);margin:0}
+.ck{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px;color:var(--fg2);cursor:pointer}
+.ck input{accent-color:var(--ac);margin:0}
+.pop .ft{border-top:1px solid var(--hair);margin-top:14px;padding-top:11px;font-size:12px;color:var(--fg3)}
+.pop .ft b{color:var(--ac);font-family:var(--mono);font-weight:500}
+/* chart */
+.track{margin:0}.tkbody{position:relative;padding-top:24px}
+.tkline{position:absolute;left:0;right:0;height:1px;background:var(--ac);opacity:.45;z-index:1}
+.tkline:after{content:attr(data-l);position:absolute;left:0;top:-7px;background:var(--bg);padding-right:8px;font-family:var(--mono);font-size:10px;color:var(--ac)}
+.tkcols{display:flex;gap:8px;align-items:stretch;height:136px;position:relative;z-index:2}
+.tkcol{flex:1;position:relative}
+.sub{position:absolute;left:12%;right:12%;bottom:0;border-radius:3px 3px 0 0;background:repeating-linear-gradient(135deg,var(--hair2) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 1px var(--hair2)}
+.tkcol.ok .sub{background:repeating-linear-gradient(135deg,var(--ac) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 1px var(--ac2)}
+.str{position:absolute;left:12%;right:12%;bottom:0;border-radius:3px 3px 0 0;background:var(--hair2)}
+.tkcol.ok .str{background:var(--ac)}
+.tkcol.you .sub{left:5%;right:5%;outline:1px solid var(--fg2);outline-offset:2px}
+.tkcol.na{opacity:.45}
+.tkval{position:absolute;left:-6px;right:-6px;z-index:4;font-family:var(--mono);font-size:9.5px;color:var(--fg3);text-align:center;white-space:nowrap}
+.tkcol.ok .tkval{color:var(--ac)}
+.tkfoot{display:flex;gap:8px;margin-top:9px}
+.tkf{flex:1;text-align:center}
+.tkf .nm{font-family:var(--mono);font-size:11px;color:var(--fg2)}
+.tkf .sb{font-family:var(--mono);font-size:9.5px;color:var(--fg4);margin-top:2px}
+.tkf .yo{display:inline-block;font-size:9px;font-family:var(--mono);color:var(--fg);background:var(--hair2);border-radius:3px;padding:0 4px;margin-top:3px}
+.mtrack{display:flex;gap:4px;align-items:flex-end;height:20px}
+.mtrack i{width:9px;background:var(--hair2);border-radius:1px;display:block;position:relative}
+.mtrack i.ok{background:var(--ac)}
+.mtrack i.you{outline:1px solid var(--fg2);outline-offset:2px}
+/* home */
+.paste{display:flex;gap:9px;align-items:center;margin-bottom:8px}
+.paste input{flex:1;background:var(--el);border:1px solid var(--hair2);border-radius:8px;padding:11px 14px;color:var(--fg);font-family:var(--mono);font-size:13px;outline:none}
+.paste input:focus{border-color:var(--ac2)}.paste input::placeholder{color:var(--fg4)}
+.go{background:var(--ac);color:#17130a;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:600;white-space:nowrap}
+.go[disabled]{background:var(--hair2);color:var(--fg4);cursor:not-allowed}
+.subline{font-size:12px;color:var(--fg3);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:26px}
+.lnk{color:var(--fg2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}.lnk:hover{color:var(--ac)}
+.lhead{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.lhead h2{margin:0;font-size:15px;font-weight:600}
+.lhead .ct{font-family:var(--mono);font-size:12px;color:var(--fg3)}.lhead .ct b{color:var(--ac);font-weight:500}
+.srch{margin-left:auto;background:transparent;border:none;border-bottom:1px solid var(--hair2);padding:4px 2px;color:var(--fg);font-family:var(--mono);font-size:12.5px;outline:none;width:180px}
+.srch:focus{border-bottom-color:var(--ac2)}.srch::placeholder{color:var(--fg4)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 4px}
+.tog{border:1px solid var(--hair2);border-radius:14px;padding:3px 11px;font-size:12px;color:var(--fg3)}
+.tog:hover{color:var(--fg)}.tog.on{border-color:var(--ac2);color:var(--ac);background:var(--acbg)}
+.colh,.item{display:grid;grid-template-columns:minmax(0,1fr) 74px 108px 76px;gap:16px}
+.colh{padding:0 4px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg4);border-bottom:1px solid var(--hair)}
+.colh span:last-child{text-align:right}
+.item{align-items:center;padding:14px 4px;border-bottom:1px solid var(--hair);cursor:pointer;position:relative}
+.item:hover{background:var(--el)}
+.item:focus{outline:none;background:var(--el);box-shadow:inset 2px 0 0 var(--ac)}
+.item .nm{font-family:var(--mono);font-size:13px}.item:hover .nm{color:var(--ac)}
+.item .au{font-family:var(--mono);font-size:10.5px;color:var(--fg4);margin-left:8px}
+.item .ds{color:var(--fg3);font-size:12px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .v{font-family:var(--mono);font-size:14px}.item .v.no{color:var(--fg4)}
+.item .sb{font-family:var(--mono);font-size:10px;color:var(--fg4);margin-top:3px}
+.item .spec{font-family:var(--mono);font-size:11.5px;color:var(--fg3);text-align:right}
+.item .spec.no{color:var(--fg4)}
+/* detail */
+.crumb{font-size:12.5px;color:var(--fg3);margin-bottom:18px}
+h1{font-family:var(--mono);font-size:22px;margin:0 0 5px;font-weight:600;letter-spacing:-.5px}
+.dsub{font-size:12.5px;color:var(--fg3);margin-bottom:20px}
+.answer{font-size:18px;line-height:1.5;letter-spacing:-.2px;margin-bottom:20px;max-width:64ch}
+.answer b{color:var(--ac);font-weight:600;font-family:var(--mono)}
+.answer .q{color:var(--fg3);font-size:13.5px;display:block;margin-top:7px;letter-spacing:0}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:32px;align-items:start;padding-bottom:24px;border-bottom:1px solid var(--hair);margin-bottom:22px}
+.facts{display:flex;flex-direction:column;gap:13px}
+.fact .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--fg4);margin-bottom:3px}
+.fact .v{font-family:var(--mono);font-size:15px}.fact .v.ac{color:var(--ac)}.fact .v.no{color:var(--fg4)}
+.fact .s{font-size:11.5px;color:var(--fg3);margin-top:2px}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--hair);margin-bottom:22px}
+.tabs button{padding:0 0 10px;font-size:14px;color:var(--fg3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button:hover{color:var(--fg2)}.tabs button.on{color:var(--fg);border-bottom-color:var(--ac)}
+.sh{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--fg4);margin:0 0 12px;font-weight:600}
+.sec{margin-bottom:32px}
+.note{font-size:12px;color:var(--fg3);line-height:1.55}.note.t{margin-top:12px}
+.alarm{border:1px solid var(--warn);border-radius:8px;background:rgba(217,119,87,.07);padding:12px 15px;font-size:12.5px;color:var(--fg2);margin-bottom:18px}
+.alarm b{color:var(--warn)}
+.ok0{border:1px solid var(--hair2);border-left:2px solid var(--ac);border-radius:0 8px 8px 0;background:var(--el);padding:11px 15px;font-size:12.5px;color:var(--fg2);margin-bottom:18px}
+.ok0 b{color:var(--ac);font-family:var(--mono);font-weight:500}
+/* attribution */
+.at{display:grid;grid-template-columns:104px 58px minmax(0,1fr);gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--hair)}
+.at .k{font-family:var(--mono);font-size:12px}.at .k.top{color:var(--ac)}
+.at .c{font-family:var(--mono);font-size:12px;color:var(--fg2);text-align:right}
+.at .d{font-size:12.5px;color:var(--fg3)}
+.stk{display:flex;height:9px;border-radius:5px;overflow:hidden;margin-bottom:16px;gap:2px}
+.stk div{border-radius:2px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10px;color:var(--fg4);text-transform:uppercase;letter-spacing:.08em;padding:0 10px 8px 0;border-bottom:1px solid var(--hair);font-weight:600}
+.tbl td{padding:9px 10px 9px 0;border-bottom:1px solid var(--hair);color:var(--fg2);font-family:var(--mono);font-size:12px}
+.tbl td.n{color:var(--fg);text-align:right}
+.tbl td.w{color:var(--fg4)}
+.mpick{display:flex;gap:3px;margin-left:auto}
+.mpick button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;color:var(--fg4)}
+.mpick button:hover{color:var(--fg2)}.mpick button.on{color:var(--ac);background:var(--acbg)}
+.rowh{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+/* ladder */
+.rail{border-top:1px solid var(--hair)}
+.rg{display:grid;grid-template-columns:20px minmax(0,1fr) 92px 104px 14px;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--hair);cursor:pointer}
+.rg:hover{background:var(--el)}
+.rg .n{font-family:var(--mono);font-size:11.5px;color:var(--fg4)}
+.rg .t{font-size:13.5px}.rg .p{font-family:var(--mono);font-size:12px;color:var(--fg3);text-align:right}
+.rg .c{font-family:var(--mono);font-size:11px;color:var(--fg4);text-align:right}
+.rg .c.warn{color:var(--ac)}.rg .x{color:var(--fg4);font-size:12px;text-align:center}
+.rg.open{background:var(--el)}.rg.open .x{color:var(--ac)}
+.rg.hit .n,.rg.hit .p{color:var(--ac)}.rg.hit .t{font-weight:600}
+.rg.dead{opacity:.5}
+.rgx{padding:6px 4px 18px 54px;border-bottom:1px solid var(--hair);background:var(--el)}
+.rgx p{margin:0 0 13px;font-size:12.5px;color:var(--fg2);max-width:68ch;line-height:1.6}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:5px 16px;font-size:12.5px;max-width:600px}
+.kv .k{color:var(--fg4)}.kv .v{font-family:var(--mono);color:var(--fg2)}
+.leak{display:grid;grid-template-columns:150px minmax(0,1fr);gap:26px;align-items:center;border:1px solid var(--ac2);border-radius:10px;background:var(--acbg);padding:18px 20px;margin:2px 0 14px}
+.leak .big{font-family:var(--mono);font-size:44px;line-height:.95;color:var(--ac);letter-spacing:-2.5px}
+.leak .cap{font-size:11.5px;color:var(--fg3);margin-top:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:12.5px}
+.two h5{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg4);font-weight:600}
+.two ul{margin:0;padding-left:15px}.two li{margin-bottom:3px;color:var(--fg2)}.two .lv li{color:var(--ac)}
+.btn{border:1px solid var(--hair2);border-radius:7px;padding:7px 14px;font-size:12.5px;color:var(--fg2)}
+.btn.ac{background:var(--ac);color:#17130a;border-color:var(--ac);font-weight:600}
+.prog{height:2px;background:var(--hair);margin:16px 0 10px}.prog i{display:block;height:100%;background:var(--ac)}
+.rr{display:grid;grid-template-columns:70px minmax(0,1fr) 96px;gap:16px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--hair);font-size:12.5px}
+.rr .st{font-family:var(--mono);font-size:11px;color:var(--fg4)}.rr .st.go{color:var(--ac)}
+.kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--hair2);border-radius:3px;padding:0 4px;color:var(--fg3)}
+footer{border-top:1px solid var(--hair);margin-top:40px;padding:18px 0 0;font-size:11.5px;color:var(--fg4);line-height:1.6}
+@media(max-width:820px){.hero{grid-template-columns:1fr;gap:22px}.colh,.item{grid-template-columns:minmax(0,1fr) 74px 90px}
+.item>*:nth-child(4),.colh span:nth-child(4){display:none}.leak,.two{grid-template-columns:1fr;gap:14px}
+.rg{grid-template-columns:18px minmax(0,1fr) 80px 14px}.rg .c{display:none}}
+</style></head><body>
+<header><div class="hin">
+  <a href="#" class="logo" data-home>fits</a>
+  <div class="lens"><span>my model</span><div class="mseg" id="mseg"></div>
+    <div class="barbtn"><button id="barToggle">pass ≥ <span id="bp">0.80</span></button>
+      <div class="pop" id="barpop"><h4>What counts as working</h4>
+        <div class="sl"><div class="lb"><span>minimum pass rate</span><b id="lp">0.80</b></div>
+          <input type="range" id="rp" min="0.10" max="0.98" step="0.01" value="0.80"></div>
+        <label class="ck"><input type="checkbox" id="rs"> require a valid tool call (strict)</label>
+        <div class="ft"><b id="fitn">0</b><span id="fitt"></span></div>
+      </div></div>
+  </div></div></header>
+<div id="app"></div>
+<script>
+const D={"M":[{"m":"llama-3.2-1b","id":"meta-llama/llama-3.2-1b-instruct","cls":"1B","P":1,"A":{"n":180,"sub":0.25,"strict":0.0,"p50":4.81},"B":{"n":180,"sub":0.2167,"strict":0.0,"p50":0.72},"bk":{"ARGS":56,"SELECTION":64,"REASONING":12,"EAGER":3},"at":{"FORMAT":20,"SKILL_TEXT":64,"MODEL":15},"kd":{"invoke":{"n":63,"sub":0.0,"strict":0.0,"p50":4.81},"abstain":{"n":57,"sub":0.7895,"strict":0.0,"p50":7.37},"use_result":{"n":60,"sub":0.0,"strict":0.0,"p50":4.55}},"f1":0.268,"nd":0.0,"native":false},{"m":"gemma-3-4b","id":"google/gemma-3-4b-it","cls":"4B","P":4,"A":{"n":180,"sub":0.5222,"strict":0.4056,"p50":13.38},"B":{"n":180,"sub":0.3611,"strict":0.2944,"p50":1.7},"bk":{"ARGS":36,"SELECTION":24,"EAGER":12,"IGNORED":8,"REASONING":6},"at":{"SKILL_TEXT":36,"MODEL":20,"FORMAT":3},"kd":{"invoke":{"n":63,"sub":0.381,"strict":0.381,"p50":19.72},"abstain":{"n":57,"sub":0.7368,"strict":0.4211,"p50":7.89},"use_result":{"n":60,"sub":0.4667,"strict":0.4167,"p50":13.58}},"f1":0.935,"nd":0.0167,"native":false},{"m":"qwen3-8b","id":"qwen/qwen3-8b","cls":"8B","P":8,"A":{"n":180,"sub":0.8333,"strict":0.7833,"p50":8.75},"B":{"n":180,"sub":0.7944,"strict":0.7611,"p50":2.73},"bk":{"REASONING":6,"IGNORED":9,"EAGER":3,"ARGS":9,"SELECTION":3},"at":{"MODEL":18},"kd":{"invoke":{"n":63,"sub":0.8095,"strict":0.7619,"p50":11.1},"abstain":{"n":57,"sub":0.9474,"strict":0.8421,"p50":4.99},"use_result":{"n":60,"sub":0.75,"strict":0.75,"p50":9.58}},"f1":0.927,"nd":0.0,"native":true},{"m":"claude-sonnet-5","id":"anthropic/claude-sonnet-5","cls":"frontier","P":999,"A":{"n":180,"sub":0.75,"strict":0.6333,"p50":4.21},"bk":{"ARGS":12,"SELECTION":3,"BORING":30},"at":{"SKILL_TEXT":1,"":4},"kd":{"invoke":{"n":63,"sub":0.5873,"strict":0.5556,"p50":8.76},"abstain":{"n":57,"sub":0.8596,"strict":0.5263,"p50":2.12},"use_result":{"n":60,"sub":0.8167,"strict":0.8167,"p50":4.35}},"f1":0.805,"nd":0.0833,"native":true}],"S":{"addyosmani__browser-devtools":{"repo":"addyosmani/agent-skills","stars":90510,"chars":13550},"agents365__drawio":{"repo":"Agents365-ai/drawio-skill","stars":8167,"chars":41514},"anthropic__docx":{"repo":"anthropics/skills","stars":172282,"chars":5944},"anthropic__pdf":{"repo":"anthropics/skills","stars":172282,"chars":7512},"anthropic__pptx":{"repo":"anthropics/skills","stars":172282,"chars":19820},"anthropic__webapp-testing":{"repo":"anthropics/skills","stars":172282,"chars":3574},"anthropic__xlsx":{"repo":"anthropics/skills","stars":172282,"chars":7503},"browseract__amazon-product-detail":{"repo":"browser-act/skills","stars":5514,"chars":10070},"gws__gws-calendar-insert":{"repo":"googleworkspace/cli","stars":30626,"chars":1518},"gws__gws-drive-upload":{"repo":"googleworkspace/cli","stars":30626,"chars":1038},"gws__gws-gmail-send":{"repo":"googleworkspace/cli","stars":30626,"chars":2364},"gws__gws-sheets":{"repo":"googleworkspace/cli","stars":30626,"chars":2361},"kdense__biopython":{"repo":"K-Dense-AI/scientific-agent-skills","stars":36566,"chars":15118},"kdense__database-lookup":{"repo":"K-Dense-AI/scientific-agent-skills","stars":36566,"chars":25570},"kepano__defuddle":{"repo":"kepano/obsidian-skills","stars":47444,"chars":734},"kepano__json-canvas":{"repo":"kepano/obsidian-skills","stars":47444,"chars":7358},"kepano__obsidian-cli":{"repo":"kepano/obsidian-skills","stars":47444,"chars":2668},"tenglin__notebooklm":{"repo":"teng-lin/notebooklm-py","stars":18987,"chars":41179},"vercel__cli-tokens":{"repo":"vercel-labs/agent-skills","stars":30591,"chars":10100},"vercel__deploy":{"repo":"vercel-labs/agent-skills","stars":30591,"chars":11458}},"C":{"addyosmani__browser-devtools|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":4.38,"bk":{"ARGS":3,"SELECTION":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":4.19},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":3.55},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":7.16}}},"addyosmani__browser-devtools|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.85,"bk":{"ARGS":3,"SELECTION":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.06},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.38},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.85}}},"addyosmani__browser-devtools|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":12.83,"bk":{"REASONING":3},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":75.19},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":12.83},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.87}}},"addyosmani__browser-devtools|gemma-3-4b|B":{"n":9,"sub":0.6667,"strict":0.3333,"p50":2.35,"bk":{"REASONING":3},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":2.66},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.4},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.43}}},"addyosmani__browser-devtools|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":1.98,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":4.15},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.89},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.98}}},"addyosmani__browser-devtools|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":2.2,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":5.82},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.08},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.2}}},"addyosmani__browser-devtools|claude-sonnet-5|A":{"n":9,"sub":0.1111,"strict":0.0,"p50":0.0,"bk":{"BORING":8},"at":{"":2},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0},"abstain":{"n":3,"sub":0.3333,"strict":0.0,"p50":0.0},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0}}},"agents365__drawio|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":6.43,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.43},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":7.19},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":6.08}}},"agents365__drawio|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":1.7,"bk":{"SELECTION":2,"ARGS":4},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.33},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":1.31},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.97}}},"agents365__drawio|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":6.64,"bk":{"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":11.49},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":4.89},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":6.64}}},"agents365__drawio|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":1.34,"bk":{"SELECTION":3,"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.71},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.34},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.84}}},"agents365__drawio|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.22,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":14.84},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.83},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.77}}},"agents365__drawio|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":5.21,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":6.46},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":3.25},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":5.21}}},"agents365__drawio|claude-sonnet-5|A":{"n":9,"sub":0.4444,"strict":0.1111,"p50":2.56,"bk":{"BORING":4,"ARGS":1},"at":{"":2},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.4},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.43},"use_result":{"n":3,"sub":0.3333,"strict":0.3333,"p50":0.0}}},"anthropic__docx|llama-3.2-1b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":8.86,"bk":{"SELECTION":6,"REASONING":3},"at":{"SKILL_TEXT":6,"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":8.86},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":10.28},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.62}}},"anthropic__docx|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.52,"bk":{"SELECTION":4,"REASONING":3,"ARGS":2},"at":{"SKILL_TEXT":4,"MODEL":3,"FORMAT":2},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.9},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.46},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.51}}},"anthropic__docx|gemma-3-4b|A":{"n":9,"sub":0.3333,"strict":0.3333,"p50":21.24,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":39.88},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.56},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":21.24}}},"anthropic__docx|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":1.71,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.28},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.56},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.71}}},"anthropic__docx|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":11.04,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":11.2},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.22},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":11.38}}},"anthropic__docx|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":2.94,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.67},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.05},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.94}}},"anthropic__docx|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.81,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":9.53},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.0},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.81}}},"anthropic__pdf|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":1.8,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.8},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.65},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":3.16}}},"anthropic__pdf|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":1.41,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.29},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.74},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.44}}},"anthropic__pdf|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":17.36,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":17.42},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":11.77},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":18.05}}},"anthropic__pdf|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":0.82,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.51},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.48},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.82}}},"anthropic__pdf|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":4.82,"bk":{"REASONING":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":4.82},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.3},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":11.18}}},"anthropic__pdf|qwen3-8b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":2.14,"bk":{"REASONING":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.37},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.05},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.14}}},"anthropic__pdf|claude-sonnet-5|A":{"n":9,"sub":0.8889,"strict":0.8889,"p50":4.76,"bk":{"ARGS":1},"at":{"SKILL_TEXT":1},"kd":{"invoke":{"n":3,"sub":0.6667,"strict":0.6667,"p50":9.79},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.23},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.76}}},"anthropic__pptx|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":6.1,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.1},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":7.4},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.25}}},"anthropic__pptx|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.93,"bk":{"REASONING":3,"SELECTION":3,"ARGS":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.15},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.77},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.79}}},"anthropic__pptx|gemma-3-4b|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":14.24,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":31.47},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":4.79},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":9.23}}},"anthropic__pptx|gemma-3-4b|B":{"n":9,"sub":1.0,"strict":0.6667,"p50":1.02,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.64},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.32},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.02}}},"anthropic__pptx|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":9.07,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":18.7},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.04},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":9.07}}},"anthropic__pptx|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":2.44,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":8.59},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.02},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.44}}},"anthropic__pptx|claude-sonnet-5|A":{"n":9,"sub":0.7778,"strict":0.7778,"p50":4.01,"bk":{"ARGS":2},"at":{},"kd":{"invoke":{"n":3,"sub":0.3333,"strict":0.3333,"p50":9.66},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.1},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.01}}},"anthropic__webapp-testing|llama-3.2-1b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":4.16,"bk":{"ARGS":3,"REASONING":3,"SELECTION":3},"at":{"FORMAT":3,"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":4.2},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":4.41},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.75}}},"anthropic__webapp-testing|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":1.25,"bk":{"ARGS":3,"SELECTION":3,"REASONING":3},"at":{"FORMAT":3,"SKILL_TEXT":3,"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.25},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":2.17},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.44}}},"anthropic__webapp-testing|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":13.18,"bk":{"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":47.14},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":8.65},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.78}}},"anthropic__webapp-testing|gemma-3-4b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.42,"bk":{"REASONING":3,"ARGS":3,"SELECTION":3},"at":{"MODEL":3,"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.87},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.39},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.42}}},"anthropic__webapp-testing|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":8.94,"bk":{"REASONING":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":16.11},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":7.49},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":8.9}}},"anthropic__webapp-testing|qwen3-8b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":2.11,"bk":{"REASONING":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":2.93},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.98},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.11}}},"anthropic__webapp-testing|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":0.8889,"p50":4.62,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":0.6667,"p50":9.38},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.86},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.62}}},"anthropic__xlsx|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":2.74,"bk":{"SELECTION":6},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.73},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.78},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.64}}},"anthropic__xlsx|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.62,"bk":{"SELECTION":6,"REASONING":3},"at":{"SKILL_TEXT":6,"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.85},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.6},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.49}}},"anthropic__xlsx|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":26.41,"bk":{"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":39.58},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":7.89},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":26.41}}},"anthropic__xlsx|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":2.32,"bk":{"EAGER":3,"ARGS":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":4.57},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":1.59},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.32}}},"anthropic__xlsx|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":12.0,"bk":{"IGNORED":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":12.0},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.62},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":13.38}}},"anthropic__xlsx|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":3.68,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.68},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.95},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":3.96}}},"anthropic__xlsx|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":9.79,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":10.58},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":1.96},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":9.79}}},"browseract__amazon-product-detail|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":8.92,"bk":{"ARGS":6},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":8.73},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":8.92},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":9.54}}},"browseract__amazon-product-detail|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":3.88,"bk":{"ARGS":6},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.24},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.35},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":3.88}}},"browseract__amazon-product-detail|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":27.8,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":29.0},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":7.29},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":28.39}}},"browseract__amazon-product-detail|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":2.18,"bk":{"ARGS":3,"REASONING":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.87},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.38},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.18}}},"browseract__amazon-product-detail|qwen3-8b|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":6.79,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":0.0,"p50":15.1},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.94},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":6.79}}},"browseract__amazon-product-detail|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":2.24,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":6.09},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.01},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.24}}},"browseract__amazon-product-detail|claude-sonnet-5|A":{"n":9,"sub":0.0,"strict":0.0,"p50":0.0,"bk":{"BORING":9},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0}}},"gws__gws-calendar-insert|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":8.77,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":8.77},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":9.58},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.63}}},"gws__gws-calendar-insert|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.45,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.62},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.41},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.45}}},"gws__gws-calendar-insert|gemma-3-4b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":17.07,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":22.32},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":13.07},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":17.07}}},"gws__gws-calendar-insert|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":1.24,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.93},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.47},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.24}}},"gws__gws-calendar-insert|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":7.48,"bk":{"IGNORED":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":12.22},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":6.51},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":7.48}}},"gws__gws-calendar-insert|qwen3-8b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":2.02,"bk":{"IGNORED":3,"ARGS":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":8.27},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.1},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.02}}},"gws__gws-calendar-insert|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":4.12,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":7.45},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.44},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.12}}},"gws__gws-drive-upload|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":2.52,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.41},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.75},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.52}}},"gws__gws-drive-upload|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.57,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.5},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.64},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.39}}},"gws__gws-drive-upload|gemma-3-4b|A":{"n":9,"sub":0.7778,"strict":0.7778,"p50":13.57,"bk":{"IGNORED":2},"at":{"MODEL":2},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":13.88},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":7.49},"use_result":{"n":3,"sub":0.3333,"strict":0.3333,"p50":77.45}}},"gws__gws-drive-upload|gemma-3-4b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":1.37,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.07},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.92},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.2}}},"gws__gws-drive-upload|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":8.06,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":8.06},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":4.16},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":13.09}}},"gws__gws-drive-upload|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":3.42,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.62},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.12},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":3.48}}},"gws__gws-drive-upload|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.15,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":6.36},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.31},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.15}}},"gws__gws-gmail-send|llama-3.2-1b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":10.43,"bk":{"ARGS":3,"EAGER":3,"SELECTION":3},"at":{"FORMAT":3,"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.85},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":12.48},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":10.43}}},"gws__gws-gmail-send|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.68,"bk":{"ARGS":3,"REASONING":3,"IGNORED":3},"at":{"FORMAT":3,"MODEL":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.68},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.58},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.04}}},"gws__gws-gmail-send|gemma-3-4b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":23.33,"bk":{"ARGS":3,"EAGER":3,"IGNORED":3},"at":{"SKILL_TEXT":3,"MODEL":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.06},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":23.49},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":23.52}}},"gws__gws-gmail-send|gemma-3-4b|B":{"n":9,"sub":0.2222,"strict":0.2222,"p50":2.48,"bk":{"ARGS":3,"EAGER":3,"IGNORED":1},"at":{"SKILL_TEXT":3,"MODEL":4},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.39},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":2.57},"use_result":{"n":3,"sub":0.6667,"strict":0.6667,"p50":1.79}}},"gws__gws-gmail-send|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":8.98,"bk":{"EAGER":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":10.16},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":10.66},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":8.48}}},"gws__gws-gmail-send|qwen3-8b|B":{"n":9,"sub":0.5556,"strict":0.5556,"p50":5.33,"bk":{"ARGS":1,"EAGER":3},"at":{"SKILL_TEXT":1,"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.6667,"strict":0.6667,"p50":5.43},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":5.99},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.1}}},"gws__gws-gmail-send|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":0.8889,"p50":4.82,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":7.18},"abstain":{"n":3,"sub":1.0,"strict":0.6667,"p50":3.59},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.69}}},"gws__gws-sheets|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":6.46,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.46},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":9.18},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.55}}},"gws__gws-sheets|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.69,"bk":{"ARGS":6},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.7},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.47},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.84}}},"gws__gws-sheets|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":21.33,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":21.33},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":1.07},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":77.03}}},"gws__gws-sheets|gemma-3-4b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":1.64,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.84},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":0.61},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.64}}},"gws__gws-sheets|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":10.03,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":10.03},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.86},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":15.6}}},"gws__gws-sheets|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":3.48,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.59},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.24},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":3.65}}},"gws__gws-sheets|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":4.21,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":0.6667,"p50":8.8},"abstain":{"n":3,"sub":1.0,"strict":0.3333,"p50":2.66},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.21}}},"kdense__biopython|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":6.63,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":8.3},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":6.63},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.74}}},"kdense__biopython|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.61,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.04},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.44},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.61}}},"kdense__biopython|gemma-3-4b|A":{"n":9,"sub":0.3333,"strict":0.3333,"p50":14.92,"bk":{"ARGS":3,"EAGER":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":19.3},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":14.92},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":13.17}}},"kdense__biopython|gemma-3-4b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":2.47,"bk":{"EAGER":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":2.46},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":3.08},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.76}}},"kdense__biopython|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":14.1,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":15.38},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.62},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":14.1}}},"kdense__biopython|qwen3-8b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":2.21,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.57},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.07},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.72}}},"kdense__biopython|claude-sonnet-5|A":{"n":9,"sub":0.7778,"strict":0.7778,"p50":4.41,"bk":{"ARGS":2},"at":{},"kd":{"invoke":{"n":3,"sub":0.3333,"strict":0.3333,"p50":9.64},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.2},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.41}}},"kdense__database-lookup|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":8.68,"bk":{"SELECTION":6},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":7.38},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":9.46},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":7.75}}},"kdense__database-lookup|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":5.95,"bk":{"SELECTION":6},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.95},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":1.64},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":9.69}}},"kdense__database-lookup|gemma-3-4b|A":{"n":9,"sub":0.3333,"strict":0.3333,"p50":20.64,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":26.24},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":20.64},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":10.55}}},"kdense__database-lookup|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":4.93,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":4.93},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.37},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":7.38}}},"kdense__database-lookup|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":13.09,"bk":{"SELECTION":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":30.82},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":8.25},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":13.09}}},"kdense__database-lookup|qwen3-8b|B":{"n":9,"sub":0.6667,"strict":0.3333,"p50":2.94,"bk":{"SELECTION":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":11.52},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.16},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.94}}},"kdense__database-lookup|claude-sonnet-5|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":4.56,"bk":{"SELECTION":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":15.09},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.43},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.56}}},"kepano__defuddle|llama-3.2-1b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":2.28,"bk":{"ARGS":6,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":6},"kd":{"invoke":{"n":6,"sub":0.0,"strict":0.0,"p50":2.28},"abstain":null,"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.36}}},"kepano__defuddle|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.48,"bk":{"ARGS":3,"SELECTION":6},"at":{"FORMAT":3,"SKILL_TEXT":6},"kd":{"invoke":{"n":6,"sub":0.0,"strict":0.0,"p50":1.16},"abstain":null,"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.48}}},"kepano__defuddle|gemma-3-4b|A":{"n":9,"sub":0.3333,"strict":0.3333,"p50":21.77,"bk":{"SELECTION":3,"IGNORED":3},"at":{"SKILL_TEXT":3,"MODEL":3},"kd":{"invoke":{"n":6,"sub":0.5,"strict":0.5,"p50":26.59},"abstain":null,"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":21.77}}},"kepano__defuddle|gemma-3-4b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":1.7,"bk":{"ARGS":9},"at":{"SKILL_TEXT":9},"kd":{"invoke":{"n":6,"sub":0.0,"strict":0.0,"p50":1.7},"abstain":null,"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.72}}},"kepano__defuddle|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":10.7,"bk":{},"at":{},"kd":{"invoke":{"n":6,"sub":1.0,"strict":1.0,"p50":10.44},"abstain":null,"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":14.6}}},"kepano__defuddle|qwen3-8b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":4.63,"bk":{"SELECTION":3,"ARGS":3},"at":{"SKILL_TEXT":6},"kd":{"invoke":{"n":6,"sub":0.0,"strict":0.0,"p50":4.63},"abstain":null,"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.73}}},"kepano__defuddle|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.47,"bk":{},"at":{},"kd":{"invoke":{"n":6,"sub":1.0,"strict":1.0,"p50":8.76},"abstain":null,"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.4}}},"kepano__json-canvas|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":2.58,"bk":{"ARGS":2,"SELECTION":4},"at":{"FORMAT":2,"SKILL_TEXT":4},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.74},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.6},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.27}}},"kepano__json-canvas|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.52,"bk":{"ARGS":3,"SELECTION":3},"at":{"FORMAT":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.56},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.52},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.49}}},"kepano__json-canvas|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":6.42,"bk":{"ARGS":3},"at":{"FORMAT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.42},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":4.8},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":8.73}}},"kepano__json-canvas|gemma-3-4b|B":{"n":9,"sub":0.6667,"strict":0.3333,"p50":1.23,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":7.68},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.44},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":1.23}}},"kepano__json-canvas|qwen3-8b|A":{"n":9,"sub":1.0,"strict":0.6667,"p50":8.48,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":8.59},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":4.11},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":8.48}}},"kepano__json-canvas|qwen3-8b|B":{"n":9,"sub":1.0,"strict":0.6667,"p50":2.55,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":2.61},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.74},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.55}}},"kepano__json-canvas|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.39,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":4.85},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.96},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.39}}},"kepano__obsidian-cli|llama-3.2-1b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":2.46,"bk":{"SELECTION":3,"REASONING":6},"at":{"SKILL_TEXT":3,"MODEL":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.93},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":2.46},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":4.55}}},"kepano__obsidian-cli|llama-3.2-1b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.72,"bk":{"ARGS":3,"REASONING":6},"at":{"FORMAT":3,"MODEL":6},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.6},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.7},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.96}}},"kepano__obsidian-cli|gemma-3-4b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":5.26,"bk":{"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":5.26},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":4.15},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":10.81}}},"kepano__obsidian-cli|gemma-3-4b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":1.63,"bk":{"EAGER":3,"SELECTION":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":1.63},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":1.68},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.47}}},"kepano__obsidian-cli|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":8.62,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":9.43},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":4.66},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":9.58}}},"kepano__obsidian-cli|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":2.37,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":3.87},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.6},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.3}}},"kepano__obsidian-cli|claude-sonnet-5|A":{"n":9,"sub":1.0,"strict":1.0,"p50":4.69,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":5.33},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.74},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.69}}},"tenglin__notebooklm|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":17.86,"bk":{"ARGS":6},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":22.94},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":20.09},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":6.39}}},"tenglin__notebooklm|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":1.97,"bk":{"ARGS":6},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":1.97},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.72},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.91}}},"tenglin__notebooklm|gemma-3-4b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":3.11,"bk":{"ARGS":3,"SELECTION":3,"EAGER":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.11},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":4.42},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":1.22}}},"tenglin__notebooklm|gemma-3-4b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":0.87,"bk":{"EAGER":3,"SELECTION":6},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.11},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.86},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.56}}},"tenglin__notebooklm|qwen3-8b|A":{"n":9,"sub":1.0,"strict":1.0,"p50":3.37,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":5.49},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.74},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":3.37}}},"tenglin__notebooklm|qwen3-8b|B":{"n":9,"sub":1.0,"strict":1.0,"p50":4.7,"bk":{},"at":{},"kd":{"invoke":{"n":3,"sub":1.0,"strict":1.0,"p50":5.5},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":2.6},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.7}}},"tenglin__notebooklm|claude-sonnet-5|A":{"n":9,"sub":0.0,"strict":0.0,"p50":0.0,"bk":{"BORING":9},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.0}}},"vercel__cli-tokens|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":3.24,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.06},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":3.26},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":3.44}}},"vercel__cli-tokens|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.51,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":0.78},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.48},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.51}}},"vercel__cli-tokens|gemma-3-4b|A":{"n":9,"sub":0.0,"strict":0.0,"p50":12.72,"bk":{"ARGS":3,"SELECTION":3,"EAGER":3},"at":{"SKILL_TEXT":3,"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":82.88},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":12.72},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":5.8}}},"vercel__cli-tokens|gemma-3-4b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":2.0,"bk":{"EAGER":3,"SELECTION":3,"ARGS":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.82},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":2.0},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.57}}},"vercel__cli-tokens|qwen3-8b|A":{"n":9,"sub":0.3333,"strict":0.3333,"p50":10.09,"bk":{"ARGS":3,"IGNORED":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":15.35},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":5.63},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":10.09}}},"vercel__cli-tokens|qwen3-8b|B":{"n":9,"sub":0.3333,"strict":0.3333,"p50":2.35,"bk":{"ARGS":3,"IGNORED":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.89},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.29},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":2.35}}},"vercel__cli-tokens|claude-sonnet-5|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":4.25,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":12.52},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.96},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.25}}},"vercel__deploy|llama-3.2-1b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":7.02,"bk":{"ARGS":3,"SELECTION":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":6.11},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":8.79},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":5.23}}},"vercel__deploy|llama-3.2-1b|B":{"n":9,"sub":0.3333,"strict":0.0,"p50":0.74,"bk":{"SELECTION":3,"ARGS":3},"at":{"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":3.53},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":0.74},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.64}}},"vercel__deploy|gemma-3-4b|A":{"n":9,"sub":0.3333,"strict":0.0,"p50":10.98,"bk":{"ARGS":3,"REASONING":3},"at":{"MODEL":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":10.98},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":8.07},"use_result":{"n":3,"sub":1.0,"strict":0.0,"p50":91.85}}},"vercel__deploy|gemma-3-4b|B":{"n":9,"sub":0.0,"strict":0.0,"p50":1.07,"bk":{"ARGS":3,"REASONING":3,"SELECTION":3},"at":{"MODEL":3,"SKILL_TEXT":3},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":2.66},"abstain":{"n":3,"sub":0.0,"strict":0.0,"p50":1.07},"use_result":{"n":3,"sub":0.0,"strict":0.0,"p50":0.85}}},"vercel__deploy|qwen3-8b|A":{"n":9,"sub":0.6667,"strict":0.6667,"p50":9.59,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":18.93},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":4.99},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":9.59}}},"vercel__deploy|qwen3-8b|B":{"n":9,"sub":0.6667,"strict":0.6667,"p50":2.18,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":4.32},"abstain":{"n":3,"sub":1.0,"strict":1.0,"p50":1.37},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":2.18}}},"vercel__deploy|claude-sonnet-5|A":{"n":9,"sub":0.6667,"strict":0.3333,"p50":4.55,"bk":{"ARGS":3},"at":{},"kd":{"invoke":{"n":3,"sub":0.0,"strict":0.0,"p50":11.54},"abstain":{"n":3,"sub":1.0,"strict":0.0,"p50":2.25},"use_result":{"n":3,"sub":1.0,"strict":1.0,"p50":4.55}}}},"meta":{"runs":1260,"cases":60,"trials":3,"ceiling":"claude-sonnet-5","no_ceiling":["amz-1","amz-2","amz-3","dt-1","dt-3","nb-1","nb-2","nb-3"],"ceil_failed":["bio-1","db-1","draw-1","pptx-1","tok-1","vercel-1"],"boring_small":0,"boring_ceiling":30,"date":"2026-08-29","provider":"openrouter","protocol":"uniform text tool-call"}};
+</script>
+<script>
+/* ===== Fits — rendering real measurements from experiment/out/results.csv ===== */
+let BAR={pass:0.80, strict:false};
+let myModel=1;                 // gemma-3-4b — the tier people actually run
+let state={q:'',only:false};
+let dstate={tab:null,fm:null,openRung:null,cond:'A'};
+let route=null;
+
+const M=D.M, MET=D.meta;
+const SK=Object.keys(D.S).sort();
+const cell=(sk,m,c)=>D.C[sk+'|'+m+'|'+(c||'A')];
+const rate=a=>a?(BAR.strict?a.strict:a.sub):null;
+const p2=x=>x.toFixed(2);
+const pc=x=>(x*100).toFixed(0)+'%';
+const title=sk=>sk.replace('__','/');
+function thin(n){ return n<20
+  ? `<b style="color:var(--warn);font-weight:400">Thin evidence:</b> ${n} runs — ${n/3} cases × 3 trials. One case is worth ${(100/n).toFixed(0)} points, so treat this as a direction, not a rate. The corpus-level numbers are the ones with power.`
+  : '' }
+const fitOf=(sk,i,c)=>{const a=cell(sk,M[i].m,c||'A'); if(!a) return null;
+  return {ok:rate(a)>=BAR.pass, r:rate(a), sub:a.sub, strict:a.strict, p50:a.p50, n:a.n}};
+function minSpec(sk){for(let i=0;i<M.length;i++){const f=fitOf(sk,i); if(f&&f.ok) return i} return -1}
+function specLabel(i){return i<0?'no pass':(M[i].cls==='frontier'?'frontier only':M[i].cls+'+')}
+
+/* ---- the chart: substance solid+hatched, strict solid ---- */
+function bigTrack(sk,cond){
+  const y=v=>Math.max(2,Math.min(100,v*100));
+  return `<div class="track"><div class="tkbody">
+    <div class="tkline" data-l="bar ${BAR.pass.toFixed(2)}" style="bottom:${y(BAR.pass)}%"></div>
+    <div class="tkcols">${M.map((m,i)=>{
+      const a=cell(sk,m.m,cond||'A');
+      if(!a) return `<div class="tkcol na"><div class="tkval" style="bottom:6px">not run</div></div>`;
+      const ok=rate(a)>=BAR.pass;
+      return `<div class="tkcol ${ok?'ok':''} ${i===myModel?'you':''}" title="${m.id} — substance ${p2(a.sub)}, strict ${p2(a.strict)}, n=${a.n}">
+        <div class="tkval" style="bottom:calc(${y(a.sub)}% + 5px)">${p2(a.sub)}${a.strict<a.sub?' / '+p2(a.strict):''}</div>
+        <div class="sub" style="height:${y(a.sub)}%"></div>
+        <div class="str" style="height:${y(a.strict)}%"></div></div>`}).join('')}
+    </div></div>
+    <div class="tkfoot">${M.map((m,i)=>{
+      const a=cell(sk,m.m,cond||'A');
+      return `<div class="tkf"><div class="nm">${m.cls}</div>
+        <div class="sb">${a?a.p50.toFixed(1)+'s':'—'}</div>
+        <div class="sb">${a?'n='+a.n:''}</div>
+        ${m.cls==='frontier'?'<div class="sb" style="color:var(--warn)">provisional</div>':''}
+        ${i===myModel?'<div class="yo">you</div>':''}</div>`}).join('')}
+    </div>
+    <div class="note t">Solid = <b style="color:var(--fg2);font-weight:400">strict</b> (job done <em>and</em> a valid tool call). Hatched above it = did the job but the call was not well-formed. ${M[0].cls==='1B'?`On <span class="mono">1B</span> the entire bar is hatched — it never emitted one valid tool call in 360 runs.`:''}</div>
+  </div>`;
+}
+function miniTrack(sk){
+  return `<div class="mtrack">${M.map((m,i)=>{const a=cell(sk,m.m,'A');
+    if(!a) return `<i style="height:3px;opacity:.3"></i>`;
+    const ok=rate(a)>=BAR.pass;
+    return `<i class="${ok?'ok':''} ${i===myModel?'you':''}" style="height:${Math.max(3,Math.min(20,a.sub*20))}px"></i>`}).join('')}</div>`;
+}
+
+/* ================= home ================= */
+function renderHome(){
+  let list=SK.filter(sk=>{
+    if(state.q && !(sk+' '+D.S[sk].repo).toLowerCase().includes(state.q.toLowerCase())) return false;
+    if(state.only){const f=fitOf(sk,myModel); if(!f||!f.ok) return false}
+    return true});
+  list.sort((a,b)=>{const x=fitOf(b,myModel),y=fitOf(a,myModel);return (x?x.r:0)-(y?y.r:0)});
+  const fits=SK.filter(sk=>{const f=fitOf(sk,myModel);return f&&f.ok}).length;
+  return `<div class="wrap">
+    <div class="paste"><input id="skillurl" placeholder="github.com/owner/skill — test a skill of your own" value="${state.url||''}">
+      <button class="go" data-run ${(state.url||'').length>4?'':'disabled'}>Test it</button></div>
+    <div class="subline"><span>against <span class="mono">${M.length}</span> models · <span class="mono">${MET.cases}</span> cases · <span class="mono">${MET.trials}</span> trials</span>
+      <span class="dim">·</span><span class="lnk" data-sample>use a sample</span></div>
+    <div class="lhead"><h2>Measured</h2>
+      <span class="ct"><b>${fits}</b> of ${SK.length} clear your bar on <span class="mono">${M[myModel].cls}</span></span>
+      <input class="srch" id="q" placeholder="search  /" value="${state.q}"></div>
+    <div class="chips"><button class="tog ${state.only?'on':''}" data-t="only">only what clears ${M[myModel].cls}</button>
+      <button class="tog ${BAR.strict?'on':''}" data-t="strict">strict pass only</button></div>
+    <div class="ok0" style="margin:14px 0 18px">Corpus level, where the numbers have power — <b>${M.map(m=>m.cls+' '+pc(m.A.sub)).join(' · ')}</b> across all ${SK.length} skills. Per-skill cells below are <b>9 runs each</b>, so they resolve only to the nearest 0.11. Read a row as a direction; read the corpus line as a rate.</div>
+    <div class="colh"><span>skill</span><span>1B → frontier</span><span>on ${M[myModel].cls}</span><span>min-spec</span></div>
+    ${list.map(sk=>{const f=fitOf(sk,myModel), ms=minSpec(sk), s=D.S[sk];
+      return `<div class="item" tabindex="0" data-go="${sk}">
+        <div><div><span class="nm">${title(sk)}</span><span class="au">${s.repo}</span></div>
+          <div class="ds">${(s.chars/1000).toFixed(1)}k chars · ${s.stars.toLocaleString()}★</div></div>
+        <div>${miniTrack(sk)}</div>
+        <div><span class="v ${f&&f.ok?'':'no'}">${f?p2(f.r):'—'}</span>${f&&f.n<20?'<span title="thin evidence — 3 cases" style="color:var(--warn);font-family:var(--mono)">~</span>':''}
+          <div class="sb">${f?(f.strict<f.sub?p2(f.strict)+' strict · n='+f.n:f.p50.toFixed(1)+'s · n='+f.n):''}</div></div>
+        <div class="spec ${ms<0?'no':''}">${specLabel(ms)}</div></div>`}).join('')}
+    <div class="note t">Every number is from <span class="mono">${MET.runs.toLocaleString()}</span> real runs on ${SK.length} published skills, ${MET.date}, via ${MET.provider}. Bars run 1B → frontier. <span class="kbd">/</span> search</div>
+    ${footer()}</div>`;
+}
+function footer(){
+  return `<footer>${MET.runs.toLocaleString()} runs · ${SK.length} skills from 9 publishers · ${MET.cases} code-checked cases × ${MET.trials} trials · ${M.length} models · ${MET.date} · ${MET.provider}<br>
+  A <b>uniform text tool-call protocol</b> was used because two of the four models have no native tool-calling on this provider. That protocol is harder than a native tool API, so absolute rates read low; the ranking and the failure mix are unaffected.<br>
+  Model classes 0.5B, 1.5B, 2.6B, 3B, 7B, 9B and 12B are <b>not measured</b> and are not shown. <span class="mono">liquid/lfm-2.5-2.6b</span> could not be measured at all — the endpoint mandates reasoning, which cannot be disabled, and it returns empty content.<br>
+  The frontier row is <b>provisional and understated</b>: a mock-shell stub penalised the model that does the most reconnaissance. ${MET.no_ceiling.length} of ${MET.cases} cases have no ceiling verdict.</footer>`;
+}
+
+/* ================= detail ================= */
+const ATTR={
+ SKILL_TEXT:['Wrong skill or tool chosen, or the call was malformed.','Rewriting the skill file — rungs 1 and 4. This is the part Fits can act on.'],
+ MODEL:['Right calls, wrong judgment — or the tool result was ignored, or it fired when it should not have.','A bigger model or a narrower promise — rungs 4 to 6. No rewrite closes this.'],
+ FORMAT:['Named the exact right command but could not emit it as a callable form.','The runtime, free — grammar-constrained decoding already ships in llama.cpp, Ollama and vLLM.']};
+const SHADE={SKILL_TEXT:'#f5b73d',MODEL:'#5c656d',FORMAT:'#3d444a'};
+
+function tabFail(sk){
+  const fi=dstate.fm===null?myModel:dstate.fm, m=M[fi], a=cell(sk,m.m,'A');
+  if(!a) return `<div class="alarm">Not run on <b>${m.id}</b>.</div>`;
+  const bk=a.bk||{}, at=a.at||{}, kd=a.kd||{};
+  const atot=Object.values(at).reduce((x,y)=>x+y,0)||1;
+  const ord=Object.entries(at).filter(x=>x[0]).sort((x,y)=>y[1]-x[1]);
+  const boring=bk.BORING||0;
+  const misses=Object.values(bk).reduce((x,y)=>x+y,0);
+  return `<div class="rowh"><div class="sh" style="margin:0">${misses} misses in ${a.n} runs · <span class="mono" style="text-transform:none;letter-spacing:0;color:var(--fg2)">${m.id}</span></div>
+    <div class="mpick">${M.map((x,k)=>`<button data-fm="${k}" class="${k===fi?'on':''}">${x.cls}</button>`).join('')}</div></div>
+  ${boring? `<div class="alarm"><b>${boring} BORING failures.</b> Context overflow, missing tool or a malformed file. Across ${MET.runs-315} small-model runs in this dataset there were <b>zero</b> — so a non-zero count here means the harness is suspect, not the model. Do not read a verdict from this cell until it is chased down.</div>`
+          : `<div class="ok0"><b>Zero BORING failures.</b> Every miss below is substantive — not a context overflow, a missing tool or a malformed file. The measurement is trustworthy at this cell.</div>`}
+  <div class="sec"><div class="sh">Who can fix it</div>
+    ${ord.length? `<div class="stk">${ord.map(([k,v])=>`<div style="width:${v/atot*100}%;background:${SHADE[k]}" title="${k} ${v}"></div>`).join('')}</div>
+    ${ord.map(([k,v],i)=>`<div class="at"><span class="k ${i===0?'top':''}">${k.replace('_','-')}</span>
+      <span class="c">${v} · ${pc(v/atot)}</span><span class="d">${ATTR[k][1]}</span></div>`).join('')}
+    <div class="note t">Computed only over cases the frontier model handled, so a case the ceiling also failed is not charged to a small model. <span class="mono">${MET.ceil_failed.length}</span> cases failed at the ceiling too (the skill is unclear or our case is wrong) and <span class="mono">${MET.no_ceiling.length}</span> have no ceiling verdict — both excluded here.</div>`
+    : '<div class="note">No attributable failures at this cell.</div>'}
+  </div>
+  <div class="sec"><div class="sh">By what the case asked for</div>
+    <table class="tbl"><tr><th>case kind</th><th style="text-align:right">pass</th><th style="text-align:right">strict</th><th>what it tests</th></tr>
+    ${['invoke','abstain','use_result'].map(k=>{const c=kd[k]; if(!c) return '';
+      return `<tr><td>${k}</td><td class="n">${p2(c.sub)}</td><td class="n">${p2(c.strict)}</td>
+        <td class="w">${k==='invoke'?'fire the skill and act':k==='abstain'?'do NOT fire — this is where EAGER is caught':'read the tool result and use it'}</td></tr>`}).join('')}
+    </table>
+    ${kd.invoke&&kd.abstain&&kd.abstain.sub-kd.invoke.sub>0.3?`<div class="note t"><b style="color:var(--fg2);font-weight:400">Read this before the headline.</b> ${m.cls} scores ${p2(kd.abstain.sub)} on abstain and ${p2(kd.invoke.sub)} on invoke — most of its pass rate comes from questions it could answer without acting at all.</div>`:''}
+  </div>
+  <div class="sec"><div class="sh">Raw buckets</div>
+    <table class="tbl">${Object.entries(bk).sort((x,y)=>y[1]-x[1]).map(([k,v])=>
+      `<tr><td>${k}</td><td class="n">${v}</td><td class="n">${pc(v/misses)}</td><td class="w">${
+      {SELECTION:'picked the wrong skill, or never invoked one',EAGER:'invoked when it should have stayed out',
+       ARGS:'malformed or hallucinated arguments',IGNORED:'called the tool, then ignored what came back',
+       REASONING:'right calls, wrong conclusion',BORING:'harness fault — not a model verdict'}[k]}</td></tr>`).join('')}
+    </table></div>`;
+}
+
+const RUNGS=[
+ {n:1,t:'Rewrite the instructions',at:'SKILL_TEXT',c:'free',
+  d:'Tighten the name, the description and the when-not-to-use line; turn prose into numbered commands. This is the largest single lever in the measured attribution — and the technique is published prior art, not ours. Fits claims the measurement and the label, never the rewriting method.'},
+ {n:2,t:'Lock the answer format',at:'FORMAT',c:'3.6–8.2× decode',
+  d:'Grammar-constrained decoding. Fixes format validity and tool selection (+17 to +62.7 points), does nothing for judgment, and <em>costs 3.6× to 8.2× decode latency</em>. Abstention accuracy can fall by up to 29.5 points. The runtime already does this free — llama.cpp, Ollama, vLLM.'},
+ {n:3,t:'Hand deterministic work to plain code',at:'SKILL_TEXT',c:'free, faster',
+  d:'Sums, dates, currency and lookups never needed a model. Reduces latency rather than adding it.'},
+ {n:4,t:'Narrow what it promises',at:'MODEL',c:'more refusals',
+  d:'Ship the cases it does well and make it refuse the rest out loud. This is also the only lever against library-size degradation — that is a discrimination limit, not a text problem.'},
+ {n:5,t:'Send one step to the cloud',at:'MODEL',c:'data leaves',
+  d:'Routing one step <em>inside</em> the skill, not the request.'},
+ {n:6,t:'Move up one model size',at:'MODEL',c:'priced',
+  d:'Nothing to write. The measured mix says this is unavoidable for a real share of failures.'},
+ {n:7,t:'Train a specialist',at:null,c:'4–8 weeks',
+  d:'A fine-tune for this one job. Fits does not do this for you — this is where we stop and hand off.'}];
+
+function tabFix(sk){
+  const m=M[myModel], a=cell(sk,m.m,'A');
+  if(!a) return `<div class="alarm">Not run on <b>${m.id}</b>.</div>`;
+  const at=a.at||{}, tot=Object.values(at).reduce((x,y)=>x+y,0);
+  const base=rate(a);
+  const share=k=>tot?(at[k]||0)/tot:0;
+  const rows=RUNGS.map((r,k)=>{
+    const sh=r.at?share(r.at):0;
+    const proj=r.at? base+(1-base)*sh : null;
+    const dead=r.at && sh===0;
+    const open=dstate.openRung===k;
+    return `<div class="rg ${open?'open':''} ${dead?'dead':''}" data-rung="${k}">
+      <span class="n">${r.n}</span><span class="t">${r.t}</span>
+      <span class="p">${r.at? (sh>0? 'addresses '+pc(sh):'nothing here') : '—'}</span>
+      <span class="c ${r.c==='free'||r.c==='free, faster'?'':'warn'}">${r.c}</span>
+      <span class="x">${open?'⌄':'›'}</span></div>
+      ${open?rungBody(sk,r,sh,base,proj):''}`}).join('');
+  return `<div class="note" style="margin-bottom:16px">On <span class="mono">${m.id}</span> this passes <span class="mono">${p2(base)}</span> against your bar of <span class="mono">${BAR.pass.toFixed(2)}</span>. Rungs are ordered by cost, and each one shows <b style="color:var(--fg2);font-weight:400">the measured share of this model's failures it can address</b> — not a guessed gain. The mix moves with model size, so this ladder is recomputed per model, never cached per skill.</div>
+    <div class="rail">${rows}</div>
+    <div class="note t">${tot?`Shares are over the ${tot} attributable failures at this cell.`:'No attributable failures at this cell.'} A projection only becomes a number when the rung is applied and re-measured — <b style="color:var(--fg2);font-weight:400">no repair has been run yet</b>. Measurement and repair were deliberately kept apart so neither contaminates the other.</div>`;
+}
+function rungBody(sk,r,sh,base,proj){
+  if(r.n===5) return `<div class="rgx"><p>${r.d}</p>
+    <div class="leak"><div><div class="big">4.1%</div><div class="cap">of the payload would leave the machine — <b style="color:var(--warn)">illustrative; not yet measured</b></div></div>
+    <div class="two"><div><h5>stays local</h5><ul><li>the document</li><li>every extracted field</li><li>your policy</li></ul></div>
+    <div class="lv"><h5>leaves</h5><ul><li>one sub-step's input</li></ul></div></div></div>
+    <div class="note">Rung 5 is the one figure in this build that is <b style="color:var(--warn);font-weight:400">not from the experiment</b>. Byte-level accounting has not been implemented. It must be computed from real payloads before it is shown to anyone.</div></div>`;
+  return `<div class="rgx"><p>${r.d}</p><div class="kv">
+    ${r.at?`<span class="k">addresses</span><span class="v">${sh>0?pc(sh)+' of failures at this cell':'none at this cell'}</span>`:''}
+    ${proj!==null&&sh>0?`<span class="k">ceiling if it worked fully</span><span class="v">${p2(proj)} — from ${p2(base)}, projected</span>`:''}
+    <span class="k">cost</span><span class="v">${r.c}</span></div>
+    ${r.n===7?'<div class="note t">Listed so the ladder is honest about having an end, not because it is a button.</div>':''}</div>`;
+}
+
+function renderDetail(sk){
+  if(!D.S[sk]) return `<div class="wrap">Not measured. <span class="lnk" data-home>back</span></div>`;
+  const s=D.S[sk], ms=minSpec(sk), f=fitOf(sk,myModel), m=M[myModel];
+  const A=cell(sk,m.m,'A'), B=cell(sk,m.m,'B');
+  const drop=A&&B?A.sub-B.sub:null;
+  const tab=dstate.tab||'fail';
+  return `<div class="wrap">
+   <div class="crumb"><span class="lnk" data-home>all skills</span> <span class="dim">/</span> <span class="mono dim2">${title(sk)}</span></div>
+   <h1>${title(sk)}</h1>
+   <div class="dsub"><span class="mono">${s.repo}</span> · ${s.stars.toLocaleString()}★ · ${(s.chars/1000).toFixed(1)}k characters</div>
+   <div class="hero"><div>
+     <div class="answer">${f? (f.ok
+        ? `On <b>${m.cls}</b> this works — <b>${p2(f.r)}</b> over ${f.n} runs.<span class="q">${f.strict<f.sub?`Strict pass is ${p2(f.strict)} — some of those runs got the job done with a malformed call. `:''}${thin(f.n)}</span>`
+        : `On <b>${m.cls}</b> this does not clear your bar — <b>${p2(f.r)}</b> against ${BAR.pass.toFixed(2)}.<span class="q">${ms<0?'No model we measured clears it. ':'It clears at '+M[ms].cls+'. '}${thin(f.n)}</span>`)
+      : 'Not run on this model.'}</div>
+     ${bigTrack(sk,'A')}
+     ${drop!==null?`<div class="sec" style="margin-top:26px"><div class="sh">With all 20 skill descriptions in scope</div>
+       <table class="tbl"><tr><th>model</th><th style="text-align:right">1 skill</th><th style="text-align:right">20 skills</th><th style="text-align:right">change</th></tr>
+       ${M.map(x=>{const a=cell(sk,x.m,'A'),b=cell(sk,x.m,'B'); if(!a||!b) return '';
+         const d=b.sub-a.sub;
+         return `<tr><td>${x.cls}</td><td class="n">${p2(a.sub)}</td><td class="n">${p2(b.sub)}</td><td class="n" style="color:${d<-0.05?'var(--ac)':'var(--fg4)'}">${d>=0?'+':''}${d.toFixed(2)}</td></tr>`}).join('')}
+       </table>
+       <div class="note t">Two measured points, not a curve — we do not interpolate between them. Across the whole corpus the effect is <b style="color:var(--fg2);font-weight:400">band-limited</b>: 4B lost 16.1pp, while 1B lost 3.3pp (already failing before skill choice mattered) and 8B lost 3.9pp (still able to discriminate across 20). No rewrite fixes this; only narrowing scope does.</div></div>`:''}
+   </div>
+   <div class="facts">
+     <div class="fact"><div class="k">Min-spec</div><div class="v ${ms<0?'no':'ac'}">${specLabel(ms)}</div>
+       <div class="s">${ms<0?'no measured model clears your bar':'smallest measured model that clears it'}</div></div>
+     <div class="fact"><div class="k">On ${m.cls}</div><div class="v">${f?p2(f.sub):'—'}<span style="color:var(--fg4);font-size:12px"> / ${f?p2(f.strict):'—'} strict</span></div>
+       <div class="s">substance / protocol-valid too</div></div>
+     <div class="fact"><div class="k">Tool-call validity</div><div class="v" style="font-size:13px">${(M[myModel].f1*100).toFixed(0)}%<span style="color:var(--fg4)"> model-wide</span></div>
+       <div class="s">${M[myModel].native?'native tool-calling available':'<b style="color:var(--ac);font-weight:400">no native tool-calling</b> on this provider'}</div></div>
+     <div class="fact"><div class="k">Repeat-run disagreement</div><div class="v" style="font-size:13px">${(M[myModel].nd*100).toFixed(1)}%</div>
+       <div class="s">${M[myModel].nd>0.05?'unstable — budget repeat trials here':'stable at temperature 0'}</div></div>
+     <div class="fact"><div class="k">Evidence</div><div class="v" style="font-size:13px">${f?f.n:0} runs</div>
+       <div class="s">${MET.date} · <span class="lnk" data-run2>re-test</span></div></div>
+   </div></div>
+   <div class="tabs">
+     <button data-tab="fail" class="${tab==='fail'?'on':''}">Why it fails</button>
+     <button data-tab="fix" class="${tab==='fix'?'on':''}">How to fix it</button></div>
+   ${tab==='fail'?tabFail(sk):tabFix(sk)}
+   ${footer()}</div>`;
+}
+
+/* ================= running ================= */
+let rst=null,rtm=null;
+const CASES=['invoke — happy path','abstain — unrelated question','use_result — read the tool output','invoke — missing argument','abstain — greeting','use_result — multi-step','invoke — ambiguous'];
+function renderRun(){
+  const frac=(rst.mi+rst.ci/CASES.length)/M.length;
+  return `<div class="wrap"><h1>${rst.slug}</h1>
+    <div class="dsub">${M.length} models · ${CASES.length} cases · 3 trials · ${rst.el}s elapsed</div>
+    <div class="prog"><i style="width:${Math.min(100,frac*100)}%"></i></div>
+    <div class="note" style="display:flex;gap:18px"><span>model <span class="mono dim2">${rst.mi+1}/${M.length}</span></span>
+      <span>case <span class="mono dim2">${rst.ci+1}/${CASES.length}</span></span>
+      <span style="margin-left:auto"><span class="lnk" data-cancel>cancel</span></span></div>
+    ${M.map((m,k)=>{const st=k<rst.mi?'done':k===rst.mi?'go':'wait';
+      return `<div class="rr"><span class="st ${st}">${st==='done'?'done':st==='go'?'running':'queued'}</span>
+      <span><span class="mono">${m.cls}</span> <span class="dim" style="font-size:11px">${m.id}</span>
+      ${st==='go'?`<div class="dim" style="font-size:12px;margin-top:2px">${CASES[rst.ci]}</div>`:''}</span>
+      <span class="mono dim" style="font-size:11.5px;text-align:right">${st==='done'?'done':st==='go'?(CASES.length-rst.ci)+' left':'—'}</span></div>`}).join('')}
+    <div class="note t">This mockup cannot run a model. A real run would take about ${Math.round(M.length*CASES.length*3*4/60)} minutes and cost a few cents.</div></div>`;
+}
+function startRun(slug){
+  rst={slug:slug,mi:0,ci:0,el:0}; route='@run'; render(); clearInterval(rtm);
+  rtm=setInterval(()=>{ if(route!=='@run'){clearInterval(rtm);return}
+    rst.el++; rst.ci++;
+    if(rst.ci>=CASES.length){rst.ci=0;rst.mi++}
+    if(rst.mi>=M.length){clearInterval(rtm); route=null; state.notRun=slug; render(); return}
+    render()},130);
+}
+
+/* ================= shell ================= */
+function render(){
+  document.getElementById('app').innerHTML =
+    route==='@run'?renderRun(): route?renderDetail(route): renderHome();
+  document.getElementById('mseg').innerHTML=M.map((m,k)=>
+    `<button data-my="${k}" class="${k===myModel?'on':''}" title="${m.id}">${m.cls}</button>`).join('');
+  const g=i=>document.getElementById(i);
+  g('bp').textContent=BAR.pass.toFixed(2); g('lp').textContent=BAR.pass.toFixed(2);
+  g('rp').value=BAR.pass; g('rs').checked=BAR.strict;
+  g('fitn').textContent=SK.filter(sk=>{const f=fitOf(sk,myModel);return f&&f.ok}).length;
+  g('fitt').textContent=` of ${SK.length} skills clear this bar on ${M[myModel].cls}. Every number moves with it.`;
+  if(state.notRun){const n=state.notRun;state.notRun=null;
+    setTimeout(()=>alert('Run finished.\n\n"'+n+'" is not in this dataset — the mockup ships only the '+SK.length+' skills that were actually measured on '+MET.date+'.\n\nA real build appends the result and tags the row "yours".'),80)}
+}
+document.addEventListener('click',e=>{const t=s=>e.target.closest(s);
+  if(t('[data-home]')){e.preventDefault();route=null;dstate={tab:null,fm:null,openRung:null,cond:'A'};render();scrollTo(0,0);return}
+  if(t('[data-go]')){route=t('[data-go]').dataset.go;dstate={tab:null,fm:null,openRung:null,cond:'A'};render();scrollTo(0,0);return}
+  if(t('[data-my]')){myModel=+t('[data-my]').dataset.my;dstate.fm=null;dstate.openRung=null;render();return}
+  if(t('[data-tab]')){dstate.tab=t('[data-tab]').dataset.tab;dstate.openRung=null;render();return}
+  if(t('[data-fm]')){dstate.fm=+t('[data-fm]').dataset.fm;render();return}
+  if(t('[data-rung]')){const k=+t('[data-rung]').dataset.rung;dstate.openRung=dstate.openRung===k?null:k;render();return}
+  if(t('[data-t]')){const k=t('[data-t]').dataset.t; if(k==='strict')BAR.strict=!BAR.strict; else state[k]=!state[k]; render();return}
+  if(t('[data-sample]')){state.url='github.com/anthropics/skills/pdf';render();return}
+  if(t('[data-run]')){startRun((state.url||'').split('/').pop()||'my-skill');return}
+  if(t('[data-run2]')){startRun(route);return}
+  if(t('[data-cancel]')){clearInterval(rtm);route=null;render();return}});
+document.addEventListener('input',e=>{
+  if(e.target.id==='skillurl'){state.url=e.target.value;
+    const b=document.querySelector('[data-run]'); if(b)b.disabled=state.url.trim().length<=4; return}
+  if(e.target.id==='q'){state.q=e.target.value;render();
+    const q=document.getElementById('q');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}});
+document.addEventListener('keydown',e=>{const q=document.getElementById('q');
+  if(e.key==='/'&&q&&document.activeElement!==q&&document.activeElement.tagName!=='INPUT'){e.preventDefault();q.focus();return}
+  if(e.key==='Escape'&&route){route=null;render()}});
+const bt=document.getElementById('barToggle'),bp=document.getElementById('barpop');
+bt.addEventListener('click',e=>{e.stopPropagation();bp.classList.toggle('on');bt.classList.toggle('open',bp.classList.contains('on'))});
+bp.addEventListener('click',e=>e.stopPropagation());
+document.addEventListener('click',()=>{bp.classList.remove('on');bt.classList.remove('open')});
+document.getElementById('rp').addEventListener('input',e=>{BAR.pass=+e.target.value;render()});
+document.getElementById('rs').addEventListener('change',e=>{BAR.strict=e.target.checked;render()});
+render();
+
+</script>
+</body></html>

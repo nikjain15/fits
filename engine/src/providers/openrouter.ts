@@ -23,6 +23,7 @@
  * whose model has been withdrawn is recorded as unavailable rather than dropped.
  */
 import { ProviderError, assertHonest, type CompletionReply, type CompletionRequest, type Provider } from "./index.ts";
+import { httpFetch } from "../net.ts";
 import { secret, redact } from "../secrets.ts";
 
 const BASE = "https://openrouter.ai/api/v1";
@@ -52,7 +53,7 @@ function key(): string {
 
 export async function listModels(): Promise<Map<string, CatalogEntry>> {
   if (catalog) return catalog;
-  const r = await fetch(`${BASE}/models`, { headers: { authorization: `Bearer ${key()}` } });
+  const r = await httpFetch(`${BASE}/models`, { headers: { authorization: `Bearer ${key()}` } });
   if (!r.ok) throw new ProviderError(`openrouter /models ${r.status}`, "provider");
   const j = (await r.json()) as { data: CatalogEntry[] };
   catalog = new Map(j.data.map((m) => [m.id, m]));
@@ -121,7 +122,7 @@ export const openrouter: Provider = {
     const timer = setTimeout(() => ac.abort(), 180_000);
     let res: Response;
     try {
-      res = await fetch(`${BASE}/chat/completions`, {
+      res = await httpFetch(`${BASE}/chat/completions`, {
         method: "POST",
         headers: { authorization: `Bearer ${key()}`, "content-type": "application/json" },
         body: JSON.stringify(body),

@@ -148,6 +148,27 @@ function main() {
     };
   }).sort((a, b) => a.P - b.P);
 
+  /**
+   * AUTO-DERIVED SKILLS NEVER REACH THE PUBLISHED DATASET.
+   *
+   * A skill pasted into the local Test button is fetched, given a suite derived
+   * from its own text, and run through the same engine — so its rows land in the
+   * node store beside everything else. They must not land on the SITE: nobody has
+   * accepted those cases, and folding an unreviewed suite into a corpus rate is
+   * the same overclaim as averaging two models into one size class.
+   *
+   * They are dropped here, at the publish boundary, rather than by never storing
+   * them — the run is real evidence for the person who asked for it, and it stays
+   * in data/nodes/ where they can read it.
+   */
+  const inCorpus = new Set(corpus.map((c) => c.id));
+  const autoRows = rows.filter((r) => !inCorpus.has(r.skill));
+  if (autoRows.length) {
+    const names = [...new Set(autoRows.map((r) => r.skill))];
+    console.log(`  ${autoRows.length} rows from ${names.length} auto-derived skill(s) held back — no human has accepted those suites: ${names.join(", ")}`);
+    rows = rows.filter((r) => inCorpus.has(r.skill));
+  }
+
   // ---- skills --------------------------------------------------------------
   const skillIds = [...new Set(rows.map((r) => r.skill))];
   const S: Record<string, unknown> = {};

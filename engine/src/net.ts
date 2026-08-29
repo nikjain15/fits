@@ -24,9 +24,30 @@
  *
  * Expiring our connections well before the remote does removes the race.
  */
-import { Agent, setGlobalDispatcher } from "undici";
+import { Agent, setGlobalDispatcher, fetch as undiciFetch } from "undici";
 
 let installed = false;
+
+/**
+ * USE THIS, NOT THE GLOBAL `fetch`.
+ *
+ * This is the second half of the fix and the half that actually matters. Node 26
+ * ships its own internal copy of undici, so `globalThis.fetch` is NOT the same
+ * function as the npm package's `fetch` — verified directly:
+ *
+ *     globalThis.fetch === undici.fetch   ->   false
+ *
+ * `setGlobalDispatcher` from the npm package therefore configures a client that
+ * nothing in this engine was calling. Every connection setting below was being
+ * written to an object no request ever touched, which is why the keep-alive fix
+ * appeared to work in a short probe (few idle sockets) and did nothing across a
+ * long run: 1,740 rows — a THIRD of the dataset — came back
+ * ERR_HTTP2_INVALID_SESSION and were counted as BORING.
+ *
+ * A fix that cannot be observed to work is not a fix. Routing calls through this
+ * export is what puts them on the dispatcher configured below.
+ */
+export const httpFetch = undiciFetch as unknown as typeof globalThis.fetch;
 
 export function configureHttp(): void {
   if (installed) return;
@@ -43,6 +64,10 @@ export function configureHttp(): void {
       pipelining: 1,
       headersTimeout: 180_000,
       bodyTimeout: 180_000,
+      // HTTP/1.1 only. The failures were all ERR_HTTP2_INVALID_SESSION: a
+      // multiplexed h2 session that drops takes every in-flight request on it
+      // down together, turning one network blip into a whole cell of BORING.
+      allowH2: false,
     }),
   );
 }

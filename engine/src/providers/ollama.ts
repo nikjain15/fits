@@ -14,6 +14,7 @@
  * checking, it is the control that proves the check works.
  */
 import { ProviderError, assertHonest, type CompletionReply, type CompletionRequest, type Provider } from "./index.ts";
+import { httpFetch } from "../net.ts";
 
 const BASE = process.env.OLLAMA_HOST ?? "http://localhost:11434";
 
@@ -54,7 +55,7 @@ export function contextWindow(modelId: string): number {
 
 async function tags(): Promise<Map<string, TagEntry>> {
   if (tagCache) return tagCache;
-  const r = await fetch(`${BASE}/api/tags`).catch((e) => {
+  const r = await httpFetch(`${BASE}/api/tags`).catch((e) => {
     throw new ProviderError(`ollama unreachable at ${BASE}: ${e}`, "network");
   });
   if (!r.ok) throw new ProviderError(`ollama /api/tags ${r.status}`, "provider");
@@ -120,7 +121,7 @@ export const ollama: Provider = {
     const timer = setTimeout(() => ac.abort(), 300_000);
     let res: Response;
     try {
-      res = await fetch(`${BASE}/api/chat`, {
+      res = await httpFetch(`${BASE}/api/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),

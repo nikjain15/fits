@@ -26,6 +26,7 @@
  * single response for the rest of the run.
  */
 import { ProviderError, assertHonest, type CompletionReply, type CompletionRequest, type Provider } from "./index.ts";
+import { httpFetch } from "../net.ts";
 import { secret } from "../secrets.ts";
 
 const BASE = secret("CONDUIT_BASE_URL") ?? "";
@@ -79,7 +80,7 @@ export const conduit: Provider = {
       throw new ProviderError("conduit is not configured; nothing was run", "provider");
     }
     const t0 = Date.now();
-    const res = await fetch(`${BASE}/v1/chat/completions`, {
+    const res = await httpFetch(`${BASE}/v1/chat/completions`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${secret("CONDUIT_API_KEY")}`,

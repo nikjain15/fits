@@ -52,6 +52,12 @@ const CFG = {
   /** Hard stop. Not a warning. */
   SPEND_CAP_USD: Number(process.env.FITS_SPEND_CAP ?? 5),
   BUDGET_MIN: Number(process.env.FITS_BUDGET_MIN ?? 480),
+  /** A per-cell wall cap. The wall BUDGET is checked between cells, so without
+   *  this one pathological cell — a 41,000-character skill at a 16k context, four
+   *  steps deep, twenty-seven runs — can eat an entire night on its own and
+   *  starve every cell behind it. A cell that hits this cap is recorded as
+   *  exceeded, with no rate, exactly like any other unfinished cell. */
+  CELL_CAP_MIN: Number(process.env.FITS_CELL_CAP_MIN ?? 25),
   EARLY_STOP_TRIALS: 20,
   EARLY_STOP_MARGIN: 0.30,
   /** The early stop exists to protect a BUDGET. On the local lane there is no
@@ -209,6 +215,15 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
         // is not a cap.
         if (spend.usd >= CFG.SPEND_CAP_USD) {
           return { rows: [], discarded: `spend cap of $${CFG.SPEND_CAP_USD} reached — cell abandoned, nothing partial published`, transcripts, wall: Date.now() - t0 };
+        }
+        if (Date.now() - t0 > CFG.CELL_CAP_MIN * 60_000) {
+          return {
+            rows: [],
+            discarded: `exceeded its ${CFG.CELL_CAP_MIN}-minute cell cap after ${graded} of ${cell.calls} runs ` +
+              `(${cell.skill.parsed.body_chars.toLocaleString()}-char skill on ${cell.model.id}). No rate is published from a ` +
+              `partial cell. Re-run it alone with a larger FITS_CELL_CAP_MIN.`,
+            transcripts, wall: Date.now() - t0,
+          };
         }
 
         const tools = buildTools(tc.fixtures);

@@ -54,6 +54,17 @@ const CFG = {
   BUDGET_MIN: Number(process.env.FITS_BUDGET_MIN ?? 480),
   EARLY_STOP_TRIALS: 20,
   EARLY_STOP_MARGIN: 0.30,
+  /** The early stop exists to protect a BUDGET. On the local lane there is no
+   *  budget to protect — the marginal cost of finishing a cell is wall-clock on
+   *  an idle machine — and stopping costs us real information: a cell that is
+   *  discarded contributes no rows, so it contributes nothing to the corpus-level
+   *  rate either, which is where the statistical power lives. A model that
+   *  genuinely sits at 0.25 across twenty skills is a finding; discarding every
+   *  one of its cells turns that finding into twenty blank spaces.
+   *
+   *  So: on by default (the hosted lane pays per call), off where the calls are
+   *  free. Set FITS_EARLY_STOP=on to force it back on. */
+  EARLY_STOP: (process.env.FITS_EARLY_STOP ?? "auto") as "on" | "off" | "auto",
   BAR: Number(process.env.FITS_BAR ?? 0.80),
   /** Average tokens per model call, from the prior 1,260-run dataset. Used only
    *  for the dry-run estimate, never for a published number. */
@@ -302,7 +313,14 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
         });
 
         // Early stop. Recorded as a STATE with its reason, never as a low score.
-        if (graded >= CFG.EARLY_STOP_TRIALS && (passes / graded) < CFG.BAR - CFG.EARLY_STOP_MARGIN) {
+        const earlyStopOn = CFG.EARLY_STOP === "on" ||
+          (CFG.EARLY_STOP === "auto" && cell.model.lane === "hosted");
+        // Context overflow is the exception: it is never worth finishing, because
+        // every remaining run would fail for the same packaging reason and none of
+        // them would be a measurement of the model.
+        const overflowNow = rows.length >= 6 &&
+          rows.filter((r) => r.bucket === "BORING" && /context/i.test(r.detail)).length === rows.length;
+        if ((earlyStopOn && graded >= CFG.EARLY_STOP_TRIALS && (passes / graded) < CFG.BAR - CFG.EARLY_STOP_MARGIN) || overflowNow) {
           // Why it is failing matters more than that it is failing. A cell that
           // is almost entirely context overflow is not a model that performs
           // badly — it is a skill file that does not FIT this model's window,

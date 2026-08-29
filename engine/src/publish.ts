@@ -62,6 +62,7 @@ function main() {
       // independently of skill quality.
       native: m.lane === "local" ? false : !["gemma-3-4b", "llama-3.2-1b", "gemma-3-1b"].includes(m.key),
       p50: A?.p50_ms ?? null,
+      cold_p50: A?.cold_p50_ms ?? null,
       latency_note: m.lane === "local" ? "" : "not_comparable: hosted latency is network + queue + batching",
     };
   }).sort((a, b) => a.P - b.P);
@@ -91,6 +92,7 @@ function main() {
       // The mockup's short keys, kept so the port is minimal...
       n: c.substance.n_calls, sub: round(c.substance.rate), strict: round(c.strict.rate),
       p50: c.p50_ms === null ? null : c.p50_ms / 1000,
+      cold: c.cold_ms === null ? null : c.cold_ms / 1000,
       bk: c.buckets, at: c.attribution,
       kd: Object.fromEntries(Object.entries(c.by_kind).map(([k2, v]) => [k2, {
         n: v.substance.n_calls, sub: round(v.substance.rate), strict: round(v.strict.rate),
@@ -165,6 +167,8 @@ function main() {
     discarded_cells: discarded,
     not_measured,
     thresholds: { thin_cases: THIN_CASES, thin_calls: THIN_CALLS },
+    latency_note:
+      "Local latency is published as TWO numbers and they are never merged. cold = the first run of a skill, which pays full prompt evaluation. warm = the median of the runs after it, where llama.cpp reuses its KV prefix cache because the harness sends a byte-identical system prompt each time. Measured gap on agents365__drawio (41,514 chars) x qwen2.5-7b-q4_K_M: 163.7s cold against 4.8s warm, 34x. A user invoking a skill for the first time feels the cold number, so publishing only the median would be a confidently-wrong number about the one thing the local lane exists to report.",
     protocol_note:
       "A uniform text tool-call protocol is used across every model, because several models have no native tool API on their provider and a native harness would fail them 100% for a harness reason. A text protocol is HARDER than a native tool API, so absolute rates read low. The ranking and the failure mix are unaffected.",
   };

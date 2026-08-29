@@ -27,8 +27,12 @@ export interface Cell {
   condition: Condition;
   substance: Rate;
   strict: Rate;
-  /** Local lane only. Hosted cells carry null and `latency_note`. */
+  /** Local lane only. Hosted cells carry null and `latency_note`.
+   *  WARM: the median of every run after the first. */
   p50_ms: number | null;
+  /** The FIRST run of this cell — the only one that paid full prompt evaluation.
+   *  See the note in cells() for why this is the number a user actually feels. */
+  cold_ms: number | null;
   latency_note: string;
   buckets: Partial<Record<Bucket, number>>;
   boring: number;
@@ -69,7 +73,30 @@ export function cells(rows: ResultRow[]): Map<string, Cell> {
     const substance = rateOf(rs.map((r) => ({ caseId: r.case, pass: r.pass_substance })), repeats);
     const strict = rateOf(rs.map((r) => ({ caseId: r.case, pass: r.pass_strict })));
 
-    const lat = rs.map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
+    /**
+     * LATENCY IS TWO NUMBERS, AND PUBLISHING ONE OF THEM IS A LIE.
+     *
+     * Measured on agents365__drawio (41,514 chars) x qwen2.5-7b-q4_K_M, 27 runs:
+     * the first run took 163.7s and the median took 4.8s. A 34x gap.
+     *
+     * The cause is not noise. The harness sends a byte-identical system prompt
+     * 27 times, so llama.cpp reuses its KV prefix cache and every run after the
+     * first skips prompt evaluation of ~12,000 tokens. That is correct runtime
+     * behaviour and we are not going to defeat it -- but a user invoking this
+     * skill for the first time waits 164 seconds, and publishing "p50 4.8s" as
+     * the local latency would be exactly the confidently-wrong number this
+     * product exists to prevent. Latency is the ONLY thing the local lane is
+     * allowed to report, which makes getting it right non-optional.
+     *
+     * So both ship, labelled and never merged:
+     *   cold_ms  the first run — full prompt evaluation, what you feel once
+     *   p50_ms   the median of the rest — warm prefix, what you feel after
+     */
+    const ordered = [...rs].sort((a, b) => a.ts.localeCompare(b.ts));
+    const coldRow = ordered.find((r) => r.latency_ms !== null);
+    const warm = ordered.slice(ordered.indexOf(coldRow ?? ordered[0]) + 1)
+      .map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
+    const lat = warm;
     const buckets: Partial<Record<Bucket, number>> = {};
     for (const r of rs) if (r.bucket) buckets[r.bucket] = (buckets[r.bucket] ?? 0) + 1;
     const boring = buckets.BORING ?? 0;
@@ -96,7 +123,10 @@ export function cells(rows: ResultRow[]): Map<string, Cell> {
       skill: r0.skill, model: r0.model, condition: r0.condition,
       substance, strict,
       p50_ms: r0.lane === "local" && lat.length ? lat[Math.floor(lat.length / 2)] : null,
-      latency_note: r0.latency_note,
+      cold_ms: r0.lane === "local" ? (coldRow?.latency_ms ?? null) : null,
+      latency_note: r0.lane === "local"
+        ? "cold = first run, full prompt evaluation. warm = median of the rest, llama.cpp KV prefix cache reused because the system prompt is identical across runs."
+        : r0.latency_note,
       buckets, boring,
       boring_share: misses ? boring / misses : 0,
       invalid: misses > 0 && boring / misses > 0.20,
@@ -157,7 +187,17 @@ export function modelSummary(rows: ResultRow[], model: string, condition: Condit
   if (!rs.length) return null;
   const repeats = [...new Set(rs.map((r) => r.repeat))].sort()
     .map((rep) => rs.filter((r) => r.repeat === rep).map((r) => (r.pass_substance ? 1 : 0)));
-  const lat = rs.map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
+  // Model-wide latency: the cold figure is the median of each cell's FIRST run,
+  // because "cold" is a per-skill property (a new skill means a new prefix).
+  const firstOfCell = new Map<string, ResultRow>();
+  for (const r of [...rs].sort((a, b) => a.ts.localeCompare(b.ts))) {
+    const k = `${r.skill}|${r.condition}`;
+    if (!firstOfCell.has(k)) firstOfCell.set(k, r);
+  }
+  const coldIds = new Set([...firstOfCell.values()].map((r) => `${r.skill}|${r.case}|${r.trial}|${r.repeat}|${r.condition}`));
+  const colds = [...firstOfCell.values()].map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
+  const lat = rs.filter((r) => !coldIds.has(`${r.skill}|${r.case}|${r.trial}|${r.repeat}|${r.condition}`))
+    .map((r) => r.latency_ms).filter((x): x is number => x !== null).sort((a, b) => a - b);
   const buckets: Partial<Record<Bucket, number>> = {};
   for (const r of rs) if (r.bucket) buckets[r.bucket] = (buckets[r.bucket] ?? 0) + 1;
   const attribution: Partial<Record<string, number>> = {};
@@ -193,6 +233,7 @@ export function modelSummary(rows: ResultRow[], model: string, condition: Condit
     substance: rateOf(rs.map((r) => ({ caseId: r.case, pass: r.pass_substance })), repeats),
     strict: rateOf(rs.map((r) => ({ caseId: r.case, pass: r.pass_strict }))),
     p50_ms: lat.length ? lat[Math.floor(lat.length / 2)] : null,
+    cold_p50_ms: colds.length ? colds[Math.floor(colds.length / 2)] : null,
     buckets,
     boring: buckets.BORING ?? 0,
     attribution,

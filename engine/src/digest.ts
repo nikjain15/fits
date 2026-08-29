@@ -25,7 +25,8 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO_ROOT } from "./corpus.ts";
 import * as store from "./store.ts";
-import { cells, markCeiling } from "./aggregate.ts";
+import { cells, markCeiling, type Cell as CellLike } from "./aggregate.ts";
+import { MODELS } from "./models.ts";
 import type { ResultRow } from "./types.ts";
 
 const OUT = join(REPO_ROOT, "web", "digest");
@@ -90,6 +91,23 @@ function main() {
   // ---- 4. cost -------------------------------------------------------------
   const spend = rows.reduce((a, r) => a + r.cost_usd, 0);
 
+  // ---- 4b. the cold/warm latency gap --------------------------------------
+  // Mechanical, not editorial: the largest first-run-versus-median gap in the
+  // dataset. It earns a fixed section because latency is the only thing the
+  // local lane is allowed to report, and the median alone is not what a user
+  // feels the first time they run a skill.
+  let latLine = "";
+  {
+    const gaps = [...C.values()]
+      .filter((c) => c.cold_ms !== null && c.p50_ms !== null && c.p50_ms > 0)
+      .map((c) => ({ c, ratio: c.cold_ms! / c.p50_ms! }))
+      .sort((a, b) => b.ratio - a.ratio);
+    if (gaps.length) {
+      const g = gaps[0];
+      latLine = `- Largest cold/warm gap: \`${g.c.skill} × ${g.c.model}\` — **${(g.c.cold_ms! / 1000).toFixed(1)}s on the first run** against ${(g.c.p50_ms! / 1000).toFixed(1)}s median, **${g.ratio.toFixed(0)}×**. The first run pays full prompt evaluation; every run after it reuses the runtime's KV prefix cache because the system prompt is identical. Both numbers are published and never merged — you feel the cold one the first time you run a skill.`;
+    }
+  }
+
   // ---- 5. one finding, by rule --------------------------------------------
   const separating = flips.filter((f) => f.separates).sort((a, b) => b.stars - a.stars || Math.abs(b.to - b.from) - Math.abs(a.to - a.from));
   let finding: string;
@@ -102,7 +120,7 @@ function main() {
     const split = splitClasses(C);
     finding = split
       ? `${split.cls} disagreed with itself: ${split.detail}. That gap is the reason a size-class badge cannot be read off one model.`
-      : `${fresh.length} cells measured for the first time. No class disagreed with itself yet.`;
+      : `${fresh.length} cells measured for the first time. **No size class disagreed with itself yet** — every class in this dataset has only one model in it, so there is nothing a class-level badge could be wrong about. That changes the moment a second model joins a class.`;
   } else {
     finding = "Nothing moved and nothing new landed.";
   }
@@ -131,6 +149,9 @@ function main() {
     `## What it cost`,
     `- $${spend.toFixed(4)} this dataset. ${spend === 0 ? "The local lane costs nothing but electricity and wall-clock." : ""}`,
     ``,
+    `## Latency, cold against warm`,
+    latLine || `- No local-lane latency in this dataset.`,
+    ``,
     `## One finding`,
     finding,
     ``,
@@ -153,28 +174,42 @@ function freshLines(fresh: string[]): string {
     .map(([s, n]) => `  - \`${s}\` — ${n} cell${n > 1 ? "s" : ""}`).join("\n");
 }
 
-/** The widest within-class disagreement. This is the product's own justification:
- *  if every model in a class agreed, "4B+" would be a safe label and Fits would
- *  have nothing to say. */
-function splitClasses(C: Map<string, ReturnType<typeof cells> extends Map<string, infer V> ? V : never>) {
+/**
+ * The widest WITHIN-CLASS disagreement.
+ *
+ * This must compare models that share a size class, and only those. An earlier
+ * version grouped by skill alone and duly reported "qwen2.5-7b 1.00 vs
+ * gemma2-2b 0.67" as a class disagreeing with itself — but those are 7B and
+ * 2.6B, and a bigger model scoring higher than a smaller one is the expected
+ * ordering, not a finding. Reporting it as one would have been precisely the
+ * confidently-wrong number this product exists to prevent, in the product's own
+ * morning digest.
+ *
+ * A class disagreeing with itself is the finding that justifies the whole thing:
+ * if every model in a class agreed, "4B+" would be a safe label and Fits would
+ * have nothing to say.
+ */
+function splitClasses(C: Map<string, CellLike>): { cls: string; detail: string; spread: number } | null {
   const byClassSkill = new Map<string, Array<{ model: string; rate: number }>>();
-  for (const [k, c] of C) {
+  for (const c of C.values()) {
     if (c.condition !== "A") continue;
-    const cls = k;
-    void cls;
-    const g = `${c.skill}`;
+    const spec = MODELS.find((m) => m.key === c.model);
+    if (!spec) continue;
+    const g = `${c.skill}|${spec.cls}`;
     const a = byClassSkill.get(g) ?? [];
     a.push({ model: c.model, rate: c.substance.rate });
     byClassSkill.set(g, a);
   }
   let best: { cls: string; detail: string; spread: number } | null = null;
-  for (const [skill, ms] of byClassSkill) {
-    if (ms.length < 2) continue;
+  for (const [g, ms] of byClassSkill) {
+    if (ms.length < 2) continue;          // one model is not a class
     const rs = ms.map((m) => m.rate);
     const spread = Math.max(...rs) - Math.min(...rs);
+    if (spread === 0) continue;
     if (!best || spread > best.spread) {
+      const [skill, cls] = g.split("|");
       best = {
-        cls: skill,
+        cls: `${cls} on \`${skill}\``,
         spread,
         detail: ms.sort((a, b) => b.rate - a.rate).map((m) => `${m.model} ${m.rate.toFixed(2)}`).join(" vs "),
       };

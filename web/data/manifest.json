@@ -1,12 +1,12 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T03:44:16.200Z",
+  "generated": "2026-08-29T05:26:52.529Z",
   "bar": 0.8,
-  "runs": 126,
-  "cells": 1,
-  "skills": 1,
-  "cases": 7,
-  "models": 1,
+  "runs": 729,
+  "cells": 21,
+  "skills": 19,
+  "cases": 61,
+  "models": 2,
   "lanes": [
     "local"
   ],
@@ -14,14 +14,16 @@
     "ollama-local"
   ],
   "quantizations": [
-    "Q4_K_M"
+    "Q4_K_M",
+    "Q4_0"
   ],
   "digests": {
+    "gemma2-2b-q4_0": "8ccf136fdd5298f3",
     "qwen2.5-7b-q4km": "845dbda0ea48ed74"
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T03:42:56.169Z"
+    "last": "2026-08-29T05:24:45.412Z"
   },
   "spend_usd": 0,
   "integrity": {
@@ -35,13 +37,67 @@
     "present": false,
     "failed_cases": [],
     "no_verdict_cases": [
+      "bio-1",
+      "bio-2",
+      "bio-3",
       "pdf-1",
       "pdf-2",
       "pdf-3",
       "pdf-4",
       "pdf-5",
       "pdf-6",
-      "pdf-7"
+      "pdf-7",
+      "draw-1",
+      "draw-2",
+      "draw-3",
+      "def-1",
+      "def-2",
+      "def-3",
+      "docx-1",
+      "docx-2",
+      "docx-3",
+      "xlsx-1",
+      "xlsx-2",
+      "xlsx-3",
+      "amz-1",
+      "amz-2",
+      "amz-3",
+      "sheets-1",
+      "sheets-2",
+      "sheets-3",
+      "dt-1",
+      "dt-2",
+      "dt-3",
+      "db-1",
+      "db-2",
+      "db-3",
+      "nb-1",
+      "nb-2",
+      "nb-3",
+      "obs-1",
+      "obs-2",
+      "obs-3",
+      "drive-1",
+      "drive-2",
+      "drive-3",
+      "canvas-1",
+      "canvas-2",
+      "canvas-3",
+      "vercel-1",
+      "vercel-2",
+      "vercel-3",
+      "tok-1",
+      "tok-2",
+      "tok-3",
+      "web-1",
+      "web-2",
+      "web-3",
+      "pptx-1",
+      "pptx-2",
+      "pptx-3",
+      "cal-1",
+      "cal-2",
+      "cal-3"
     ],
     "note": "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed."
   },
@@ -58,6 +114,120 @@
       "model": "gemma2-2b-q4_0",
       "condition": "A",
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "tenglin__notebooklm",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "agents365__drawio",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kepano__json-canvas",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "gws__gws-gmail-send",
+      "model": "qwen2.5-7b-q4km",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kdense__biopython",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__xlsx",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "addyosmani__browser-devtools",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__docx",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kepano__defuddle",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__webapp-testing",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "browseract__amazon-product-detail",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__pdf",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "gws__gws-calendar-insert",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kepano__obsidian-cli",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "gws__gws-sheets",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__pptx",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "gws__gws-gmail-send",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kdense__database-lookup",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "vercel__cli-tokens",
+      "model": "gemma2-2b-q4_0",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
     }
   ],
   "not_measured": {
@@ -65,7 +235,6 @@
       "0.5B",
       "1B",
       "1.5B",
-      "2.6B",
       "3B",
       "4B",
       "8B",
@@ -177,5 +346,6 @@
     "thin_cases": 20,
     "thin_calls": 70
   },
+  "latency_note": "Local latency is published as TWO numbers and they are never merged. cold = the first run of a skill, which pays full prompt evaluation. warm = the median of the runs after it, where llama.cpp reuses its KV prefix cache because the harness sends a byte-identical system prompt each time. Measured gap on agents365__drawio (41,514 chars) x qwen2.5-7b-q4_K_M: 163.7s cold against 4.8s warm, 34x. A user invoking a skill for the first time feels the cold number, so publishing only the median would be a confidently-wrong number about the one thing the local lane exists to report.",
   "protocol_note": "A uniform text tool-call protocol is used across every model, because several models have no native tool API on their provider and a native harness would fail them 100% for a harness reason. A text protocol is HARDER than a native tool API, so absolute rates read low. The ranking and the failure mix are unaffected."
 }

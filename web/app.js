@@ -104,14 +104,15 @@ function bigTrack(sk, cond) {
     <div class="tkfoot">${M.map((m, i) => {
       const a = cell(sk, m.m, cond || 'A');
       return `<div class="tkf"><div class="nm">${m.cls}</div>
-        <div class="sb">${a && a.p50 !== null ? a.p50.toFixed(1) + 's' : (m.lane === 'hosted' ? 'latency n/a' : '—')}</div>
+        <div class="sb">${a && a.cold != null ? a.cold.toFixed(0) + 's cold' : (m.lane === 'hosted' ? 'latency n/a' : '—')}</div>
+        <div class="sb">${a && a.p50 != null ? a.p50.toFixed(1) + 's warm' : ''}</div>
         <div class="sb">${a ? a.n_cases + ' cases' : ''}</div>
         <div class="sb">${esc(m.quantization)}</div>
         ${m.is_ceiling ? '<div class="sb" style="color:var(--warn)">ceiling</div>' : ''}
         ${i === myModel ? '<div class="yo">you</div>' : ''}</div>`;
     }).join('')}
     </div>
-    <div class="note t">Solid = <b style="color:var(--fg2);font-weight:400">strict</b> (job done <em>and</em> a valid tool call). Hatched above it = did the job, malformed call. Latency is shown only on the <b style="color:var(--fg2);font-weight:400">local</b> lane — a hosted p50 is network plus queue plus batching and is not what a laptop would do.</div>
+    <div class="note t">Solid = <b style="color:var(--fg2);font-weight:400">strict</b> (job done <em>and</em> a valid tool call). Hatched above it = did the job, malformed call. Latency is shown only on the <b style="color:var(--fg2);font-weight:400">local</b> lane, and as <b style="color:var(--fg2);font-weight:400">two numbers that are never merged</b>: <em>cold</em> is the first run of a skill and pays full prompt evaluation; <em>warm</em> is the median after it, where the runtime reuses its KV prefix cache. The gap reaches 34× on the largest skill in this corpus. You feel the cold number the first time you run it. A hosted p50 is network plus queue plus batching and is shown as nothing at all.</div>
   </div>`;
 }
 
@@ -365,6 +366,8 @@ function renderDetail(sk) {
        <div class="s">substance / protocol-valid too</div></div>
      <div class="fact"><div class="k">Evidence</div><div class="v" style="font-size:13px">${f ? f.a.n_cases : 0} cases</div>
        <div class="s">${f ? f.a.n + ' runs · ' + (f.a.unstable ? 'unstable' : 'stable at temperature 0') : ''}</div></div>
+     <div class="fact"><div class="k">Latency</div><div class="v" style="font-size:13px">${A && A.cold != null ? A.cold.toFixed(0) + 's' : '—'}<span style="color:var(--fg4);font-size:12px"> cold / ${A && A.p50 != null ? A.p50.toFixed(1) + 's' : '—'} warm</span></div>
+       <div class="s">first run pays full prompt evaluation; the rest reuse the KV prefix cache</div></div>
      <div class="fact"><div class="k">Artifact</div><div class="v" style="font-size:13px">${esc(m.quantization)}</div>
        <div class="s">${m.lane} lane · ${esc(m.served_provider)}${m.lane === 'local' ? ' · the artifact you would actually pull' : ''}</div></div>
      <div class="fact"><div class="k">Repeat-run disagreement</div><div class="v" style="font-size:13px">${m.A ? (m.A.nd * 100).toFixed(1) + '%' : '—'}</div>

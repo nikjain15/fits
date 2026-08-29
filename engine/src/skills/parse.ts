@@ -21,7 +21,7 @@
  *    large share of the real corpus. This one records what it found and carries
  *    on; `spec_conformance` says which fields were extras.
  */
-import { createHash } from "node:crypto";
+import { hashText } from "../hash.ts";
 
 export const SELECTION_CAP = 1536;
 
@@ -133,7 +133,7 @@ export function parseSkill(raw: string, dirName: string): ParsedSkill {
     extra_fields,
     spec_conformance: !had ? "no-frontmatter" : extra_fields.length ? "client-extended" : "strict",
     errors,
-    content_hash: createHash("sha256").update(raw).digest("hex").slice(0, 16),
+    content_hash: hashText(raw),
   };
 }
 

@@ -36,3 +36,4 @@
 {"event":"run_end","run_id":"ff27363d","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:31:37.501Z"}
 {"event":"run_start","run_id":"17fb6c41","cells":1,"est_calls":18.54,"est_usd":0,"models":["qwen2.5-7b-q4km"],"ts":"2026-08-29T15:31:38.185Z"}
 {"event":"run_end","run_id":"17fb6c41","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:32:36.584Z"}
+{"event":"run_end","run_id":"85985bd1","cells_done":100,"cells_discarded":36,"spend_usd":0.09909909499999998,"ts":"2026-08-29T16:11:20.169Z"}

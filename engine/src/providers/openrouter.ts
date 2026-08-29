@@ -157,6 +157,7 @@ export const openrouter: Provider = {
       // of it might. If any field ever claims a cache hit, believe it.
       cached: Boolean(j?.cached ?? j?.cache_hit ?? u?.cache_hit ?? false),
       latency_ms: Date.now() - t0,
+      context_window: catalog?.get(modelId)?.context_length ?? 0,
       input_tokens: inTok,
       output_tokens: outTok,
       cost_usd:

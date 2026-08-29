@@ -26,16 +26,27 @@ interface TagEntry {
 let tagCache: Map<string, TagEntry> | null = null;
 
 /**
- * Context window per local model, pinned rather than inherited.
+ * Context window per local model. THE MODEL'S OWN MAXIMUM, not a number we
+ * picked.
  *
- * These are the models' own advertised windows, held below the maximum where the
- * KV cache would not fit alongside the weights in 16GB. A window that is too
- * small silently truncates; a window that is too large evicts the weights and
- * measures swap. Both are measurement faults, not model properties.
+ * This distinction is the whole point and the first version got it wrong. Qwen2.5
+ * supports 32k; the first run pinned it to 16k, and the two largest skills in the
+ * corpus (drawio at 41,514 chars, notebooklm at 41,179) overflowed it. Reporting
+ * those as "this skill does not fit this model" would have blamed the model for a
+ * setting of ours — a min-spec label that was really a config label, which is
+ * precisely the kind of confidently-wrong number this product exists to prevent.
+ *
+ * So the window is the model's advertised maximum. A skill that overflows THAT
+ * genuinely does not fit, and saying so is a real finding.
+ *
+ * The KV cache is the constraint on the other side: 32k on a 7B at q4 costs
+ * roughly 1.9GB alongside 4.7GB of weights, which fits this machine's 16GB. A
+ * window large enough to evict the weights would measure swap instead of the
+ * model — also a measurement fault, in the opposite direction.
  */
 const CONTEXT: Record<string, number> = {
-  "gemma2:2b": 8192,                    // gemma-2 ships an 8k window
-  "qwen2.5:7b-instruct-q4_K_M": 16384,  // 32k available; 16k holds the largest skill in the corpus
+  "gemma2:2b": 8192,                     // gemma-2's actual maximum
+  "qwen2.5:7b-instruct-q4_K_M": 32768,   // qwen2.5's actual maximum; ~1.9GB of KV
 };
 export function contextWindow(modelId: string): number {
   return CONTEXT[modelId] ?? Number(process.env.FITS_NUM_CTX ?? 8192);
@@ -131,16 +142,47 @@ export const ollama: Provider = {
 
     const j = (await res.json()) as any;
 
-    // The truncation check. prompt_eval_count is what was ACTUALLY evaluated, so
-    // a prompt that filled the window to the brim was almost certainly cut.
-    // Treated as overflow, which lands in BORING, which is an alarm -- not as a
-    // model failure, which would be a lie about a skill that simply does not fit.
+    /**
+     * THE TRUNCATION CHECK. Rewritten after the first version failed to fire on
+     * real data, which is the only reason we know it was wrong.
+     *
+     * Ollama truncates an oversized prompt instead of erroring, and it reports
+     * the count in two DIFFERENT ways depending on the case. Both were observed
+     * directly on this machine on 2026-08-29:
+     *
+     *   - `agents365__drawio` at num_ctx 16384 reported prompt_eval_count
+     *     26,594 -- ABOVE the window. The full, untruncated count.
+     *   - A 20,000-token probe at num_ctx 4096 reported prompt_eval_count 2,050
+     *     -- far BELOW the window -- and a needle placed at the very start of
+     *     the prompt was gone: the model answered garbage.
+     *
+     * The original check looked for a count near the window and caught neither.
+     * A cell measured through a truncated prompt is a pass rate for a skill file
+     * the model never read: the same class of fault as a substituted model, and
+     * the exact confidently-wrong number this product exists to prevent.
+     *
+     * So both shapes are now checked, against the size we actually sent.
+     */
     const promptTokens = j?.prompt_eval_count ?? 0;
-    if (promptTokens >= numCtx - 8) {
+    const sentChars = req.system.length + req.messages.reduce((a, m) => a + m.content.length, 0);
+    // Deliberately conservative: 3.5 chars/token under-estimates for English
+    // prose and code alike, so the floor below is a floor and not a guess.
+    const estTokens = Math.round(sentChars / 3.5);
+
+    if (promptTokens > numCtx) {
       throw new ProviderError(
-        `prompt filled the ${numCtx}-token context window (${promptTokens} evaluated) for ` +
-        `${modelId}. Ollama truncates rather than erroring, so this run would have measured ` +
-        `a cut-off skill file. Recorded as context overflow.`,
+        `prompt is ${promptTokens} tokens against a ${numCtx}-token window for ${modelId}. ` +
+        `Ollama truncates rather than erroring, so this run measured a cut-off skill file. ` +
+        `Recorded as context overflow — the skill does not fit this model, which is a ` +
+        `packaging limit and not a pass rate.`,
+        "context_overflow",
+      );
+    }
+    if (promptTokens > 0 && promptTokens < estTokens * 0.7) {
+      throw new ProviderError(
+        `sent ~${estTokens} tokens (${sentChars} chars) but only ${promptTokens} were evaluated ` +
+        `for ${modelId} at num_ctx ${numCtx}. The prompt was silently truncated and the model ` +
+        `did not see the whole skill. Recorded as context overflow.`,
         "context_overflow",
       );
     }
@@ -152,6 +194,7 @@ export const ollama: Provider = {
       quantization: meta?.details?.quantization_level ?? "unknown",
       cached: false,
       latency_ms: Date.now() - t0,
+      context_window: numCtx,
       input_tokens: j?.prompt_eval_count ?? 0,
       output_tokens: j?.eval_count ?? 0,
       cost_usd: 0,

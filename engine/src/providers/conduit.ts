@@ -112,6 +112,7 @@ export const conduit: Provider = {
       quantization: j?.quantization ?? "unknown",
       cached: Boolean(j?.cached ?? j?.cache_hit ?? u?.cache_hit ?? false),
       latency_ms: Date.now() - t0,
+      context_window: 0,
       input_tokens: u.prompt_tokens ?? 0,
       output_tokens: u.completion_tokens ?? 0,
       cost_usd: typeof u.cost === "number" ? u.cost : 0,

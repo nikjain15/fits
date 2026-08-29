@@ -26,15 +26,77 @@ import { acceptance, suiteFor } from "./cases.ts";
 import { THIN_CALLS, THIN_CASES } from "./stats.ts";
 
 const OUT = join(REPO_ROOT, "web", "data");
+
+/** Windows for rows produced before `context_window` was recorded on the row.
+ *  Mirrors engine/src/providers/ollama.ts. */
+const LEGACY_WINDOW: Record<string, number> = {
+  "gemma2:2b": 8192,
+  "qwen2.5:7b-instruct-q4_K_M": 16384,
+};
 const BAR = Number(process.env.FITS_BAR ?? 0.80);
 
 function main() {
   mkdirSync(OUT, { recursive: true });
   const nodes = store.allNodes();
-  const rows: ResultRow[] = nodes.flatMap((n) => n.rows);
+  let rows: ResultRow[] = nodes.flatMap((n) => n.rows);
 
   if (!rows.length) {
     console.error("No rows in the node store. Nothing published — an empty dataset is not a zero.");
+    process.exit(1);
+  }
+
+  /**
+   * THE TRUNCATION ASSERTION.
+   *
+   * A row whose largest single call exceeded its context window measured a skill
+   * file the model never fully read. Ollama truncates instead of erroring, so
+   * such a row LOOKS like a clean result -- it has a pass rate, a latency and no
+   * BORING. It is not a measurement, and the first version of this engine
+   * published a whole night of them.
+   *
+   * This check lives at publish time rather than only in the provider, so the
+   * invariant holds no matter what any node on disk happens to contain, and no
+   * matter which version of the provider produced it. Offending rows are dropped
+   * and counted; they never reach a rate.
+   */
+  // `max_prompt_tokens` and `context_window` were added after the first night's
+  // run, so older rows carry neither. For those, the largest single call is
+  // bounded below by (accumulated prompt tokens / number of model calls), and
+  // the call count is bounded above by steps + 1. If even that LOWER BOUND
+  // exceeds the window, the prompt was provably truncated. Rows that cannot be
+  // decided either way are counted as unverifiable and said so — never quietly
+  // trusted, and never quietly dropped.
+  const windowOf = (r: ResultRow) =>
+    r.context_window ?? LEGACY_WINDOW[r.model_id] ?? 0;
+  const maxPromptOf = (r: ResultRow) =>
+    r.max_prompt_tokens ?? Math.round(r.input_tokens / Math.max(1, (r.steps ?? 0) + 1));
+
+  const truncated = rows.filter((r) => windowOf(r) > 0 && maxPromptOf(r) > windowOf(r));
+  const suspect = rows.filter((r) =>
+    r.max_prompt_tokens === undefined && windowOf(r) > 0 && !truncated.includes(r) &&
+    // Only a row whose accumulated total already exceeds the window is in doubt;
+    // one that fits even as a single call is decided.
+    r.input_tokens > windowOf(r));
+  if (truncated.length || suspect.length) {
+    const cellsHit = [...new Set(truncated.map((r) => `${r.skill}|${r.model}|${r.condition}`))];
+    console.error(
+      `\n  ! ${truncated.length} rows exceeded their context window and were DROPPED — ` +
+      `${cellsHit.length} cells affected. Those prompts were silently truncated, so the ` +
+      `model never saw the whole skill file. This is a packaging limit, not a pass rate.`,
+    );
+    for (const c of cellsHit.slice(0, 10)) console.error(`      ${c}`);
+    if (suspect.length) {
+      console.error(
+        `  ! ${suspect.length} rows accumulated more than their window across steps and predate ` +
+        `per-call accounting, so whether any single call was truncated cannot be decided. ` +
+        `Dropped rather than trusted.`,
+      );
+    }
+  }
+  const dropped = new Set([...truncated, ...suspect]);
+  rows = rows.filter((r) => !dropped.has(r));
+  if (!rows.length) {
+    console.error("Every row was dropped by the truncation check. Nothing published.");
     process.exit(1);
   }
 
@@ -139,6 +201,13 @@ function main() {
     lanes: [...new Set(rows.map((r) => r.lane))],
     providers: [...new Set(rows.map((r) => r.served_provider))],
     quantizations: [...new Set(rows.map((r) => r.quantization))],
+    // The dataset can legitimately mix windows: the first pass pinned qwen2.5 to
+    // 16k before it was corrected to the model's real 32k maximum. num_ctx does
+    // not change what a model outputs for a prompt that FITS — at temperature 0
+    // with a fixed seed the generation is identical — it only determines whether
+    // truncation happens. So it is recorded per row and surfaced here rather than
+    // used to invalidate a night of otherwise-sound cells.
+    context_windows: [...new Set(rows.map((r) => r.context_window).filter(Boolean))].sort((a, b) => a - b),
     digests: Object.fromEntries(M.map((m) => [m.m, m.digest])),
     run_window: {
       first: rows.map((r) => r.ts).sort()[0],
@@ -147,11 +216,13 @@ function main() {
     spend_usd: round(totalSpend, 4),
     // The three things that invalidate everything below them if non-zero.
     integrity: {
+      rows_dropped_truncated: truncated.length,
+      rows_dropped_unverifiable: suspect.length,
       boring: boringTotal,
       boring_share: round(boringTotal / rows.length, 4),
       provider_substitutions: substitutions,
       cached_responses: cachedRows,
-      verdict: boringTotal === 0 && substitutions === 0 && cachedRows === 0
+      verdict: boringTotal === 0 && substitutions === 0 && cachedRows === 0 && truncated.length === 0 && suspect.length === 0
         ? "clean — zero BORING, no substitutions, no cached responses"
         : "SUSPECT — see the counts above; a non-zero value here invalidates the numbers below it until chased down",
     },

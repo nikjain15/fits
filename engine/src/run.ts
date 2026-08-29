@@ -229,7 +229,7 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
         const tools = buildTools(tc.fixtures);
         const { system, skillsInScope } = buildSystemPrompt(scoped(cell.skill), tools, library);
 
-        let latency = 0, cost = 0, inTok = 0, outTok = 0;
+        let latency = 0, cost = 0, inTok = 0, outTok = 0, maxPrompt = 0, ctxWindow = 0;
         let served_model = cell.model.id, served_provider = "", quantization = cell.model.quantization, cached = false;
         let error: RunTrace["error"];
 
@@ -250,6 +250,8 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
             cost += r.cost_usd;
             spend.usd += r.cost_usd;
             inTok += r.input_tokens;
+            maxPrompt = Math.max(maxPrompt, r.input_tokens);
+            ctxWindow = r.context_window;
             outTok += r.output_tokens;
             served_model = r.served_model;
             served_provider = r.served_provider;
@@ -312,6 +314,8 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
           latency_note: cell.model.lane === "local" ? "" : "not_comparable: hosted latency is network + queue + batching, not what a user would experience",
           cost_usd: cost,
           input_tokens: inTok,
+          max_prompt_tokens: maxPrompt,
+          context_window: ctxWindow,
           output_tokens: outTok,
           steps: trace.steps.length,
           skills_in_scope: skillsInScope,

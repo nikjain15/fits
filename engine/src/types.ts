@@ -91,6 +91,13 @@ export interface ResultRow {
   latency_note: string;
   cost_usd: number;
   input_tokens: number;
+  /** The largest SINGLE model call's prompt, not the sum across steps. This is
+   *  the number that must be compared against the context window; the sum is
+   *  meaningless for that purpose and reading it as one hid a truncation bug for
+   *  a whole night's run. */
+  max_prompt_tokens: number;
+  /** The window that call was sent into. 0 where the provider does not expose it. */
+  context_window: number;
   output_tokens: number;
   steps: number;
   skills_in_scope: number;
@@ -110,6 +117,6 @@ export const ROW_COLUMNS: (keyof ResultRow)[] = [
   "pass_substance", "pass_strict", "protocol_ok", "knew_command", "bucket", "detail",
   "attribution", "ceiling_passed", "excluded_reason",
   "lane", "served_model", "served_provider", "quantization", "cached", "model_digest",
-  "latency_ms", "latency_note", "cost_usd", "input_tokens", "output_tokens",
+  "latency_ms", "latency_note", "cost_usd", "input_tokens", "max_prompt_tokens", "context_window", "output_tokens",
   "steps", "skills_in_scope", "run_id", "harness_version", "ts",
 ];

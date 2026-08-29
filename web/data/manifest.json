@@ -1,11 +1,11 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T05:26:52.529Z",
+  "generated": "2026-08-29T08:02:35.941Z",
   "bar": 0.8,
-  "runs": 729,
-  "cells": 21,
-  "skills": 19,
-  "cases": 61,
+  "runs": 1989,
+  "cells": 65,
+  "skills": 20,
+  "cases": 64,
   "models": 2,
   "lanes": [
     "local"
@@ -14,8 +14,8 @@
     "ollama-local"
   ],
   "quantizations": [
-    "Q4_K_M",
-    "Q4_0"
+    "Q4_0",
+    "Q4_K_M"
   ],
   "digests": {
     "gemma2-2b-q4_0": "8ccf136fdd5298f3",
@@ -23,10 +23,12 @@
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T05:24:45.412Z"
+    "last": "2026-08-29T08:01:59.933Z"
   },
   "spend_usd": 0,
   "integrity": {
+    "rows_dropped_truncated": 0,
+    "rows_dropped_unverifiable": 0,
     "boring": 0,
     "boring_share": 0,
     "provider_substitutions": 0,
@@ -37,6 +39,9 @@
     "present": false,
     "failed_cases": [],
     "no_verdict_cases": [
+      "cal-1",
+      "cal-2",
+      "cal-3",
       "bio-1",
       "bio-2",
       "bio-3",
@@ -47,57 +52,57 @@
       "pdf-5",
       "pdf-6",
       "pdf-7",
-      "draw-1",
-      "draw-2",
-      "draw-3",
+      "tok-1",
+      "tok-2",
+      "tok-3",
+      "sheets-1",
+      "sheets-2",
+      "sheets-3",
+      "nb-1",
+      "nb-2",
+      "nb-3",
       "def-1",
       "def-2",
       "def-3",
+      "db-1",
+      "db-2",
+      "db-3",
+      "web-1",
+      "web-2",
+      "web-3",
+      "vercel-1",
+      "vercel-2",
+      "vercel-3",
+      "canvas-1",
+      "canvas-2",
+      "canvas-3",
       "docx-1",
       "docx-2",
       "docx-3",
       "xlsx-1",
       "xlsx-2",
       "xlsx-3",
-      "amz-1",
-      "amz-2",
-      "amz-3",
-      "sheets-1",
-      "sheets-2",
-      "sheets-3",
-      "dt-1",
-      "dt-2",
-      "dt-3",
-      "db-1",
-      "db-2",
-      "db-3",
-      "nb-1",
-      "nb-2",
-      "nb-3",
-      "obs-1",
-      "obs-2",
-      "obs-3",
       "drive-1",
       "drive-2",
       "drive-3",
-      "canvas-1",
-      "canvas-2",
-      "canvas-3",
-      "vercel-1",
-      "vercel-2",
-      "vercel-3",
-      "tok-1",
-      "tok-2",
-      "tok-3",
-      "web-1",
-      "web-2",
-      "web-3",
+      "amz-1",
+      "amz-2",
+      "amz-3",
+      "dt-1",
+      "dt-2",
+      "dt-3",
+      "gmail-1",
+      "gmail-2",
+      "gmail-3",
+      "obs-1",
+      "obs-2",
+      "obs-3",
       "pptx-1",
       "pptx-2",
       "pptx-3",
-      "cal-1",
-      "cal-2",
-      "cal-3"
+      "draw-1",
+      "draw-2",
+      "draw-3"
     ],
     "note": "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed."
   },
@@ -128,49 +133,13 @@
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
-      "skill": "kepano__json-canvas",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "gws__gws-gmail-send",
-      "model": "qwen2.5-7b-q4km",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
       "skill": "kdense__biopython",
       "model": "gemma2-2b-q4_0",
       "condition": "A",
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
-      "skill": "anthropic__xlsx",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
       "skill": "addyosmani__browser-devtools",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "anthropic__docx",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "kepano__defuddle",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "anthropic__webapp-testing",
       "model": "gemma2-2b-q4_0",
       "condition": "A",
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
@@ -188,43 +157,7 @@
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
-      "skill": "gws__gws-calendar-insert",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "kepano__obsidian-cli",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "gws__gws-sheets",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "anthropic__pptx",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "gws__gws-gmail-send",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
       "skill": "kdense__database-lookup",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    },
-    {
-      "skill": "vercel__cli-tokens",
       "model": "gemma2-2b-q4_0",
       "condition": "A",
       "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."

@@ -41,6 +41,9 @@ export interface CompletionReply {
   /** MUST be false. Any true value aborts the cell. */
   cached: boolean;
   latency_ms: number;
+  /** The context window this call was sent into, so the caller can assert the
+   *  prompt fitted. 0 where the provider does not expose one. */
+  context_window: number;
   input_tokens: number;
   output_tokens: number;
   cost_usd: number;

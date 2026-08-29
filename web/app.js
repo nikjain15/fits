@@ -20,7 +20,7 @@ import { byok, keyLooksValid, checkKey, runInBrowser } from './byok.js';
 let D = null, M = [], SK = [], MET = null;
 let BAR = { pass: 0.80, strict: false };
 let myModel = 0;
-let state = { q: '', only: false, url: '', yours: [], catError: '', sort: 'fit', cat: '', catSort: 'stars', licOnly: false };
+let state = { q: '', only: false, url: '', yours: [], catError: '', sort: 'fit', cat: '', catSort: 'stars', licOnly: false, view: 'tested', how: false };
 let dstate = { tab: null, fm: null, openRung: null };
 let route = null;
 
@@ -230,28 +230,29 @@ function renderCatalogue() {
   const searchingAll = Boolean(CAT_FULL);
   const cats = st.categories || [];
 
-  return `<div class="lhead" style="margin-top:38px"><h2>Catalogued</h2>
-      <span class="ct"><b>${st.distinct_skills.toLocaleString()}</b> distinct skills · ${st.repos.toLocaleString()} repos</span></div>
-    <div class="ok0" style="margin:12px 0 16px">
-      <b>Found, not tested.</b> These are skills we can name and locate — provenance only, no verdict.
-      Of them, <b>${st.measured}</b> have been run against a model; the rest say <span class="mono">not tested</span> and mean exactly that.
-      One measured cell is ~126 model calls, so testing all ${st.distinct_skills.toLocaleString()} is ${(st.distinct_skills * 126 / 1e6).toFixed(1)}M calls and is not going to happen — the queue works down by stars.
-      <br><span class="dim">${st.copies_folded.toLocaleString()} byte-identical copies folded into their originals: one skill vendored into 86 repos is one skill. ${(100 * st.with_osi_licence / st.distinct_skills).toFixed(0)}% carry an OSI licence.</span>
-    </div>
+  return `<div class="lhead"><h2 style="font-size:19px">Every skill we could find</h2>
+      <span class="ct"><b>${st.distinct_skills.toLocaleString()}</b> across ${st.repos.toLocaleString()} repos · <b>${st.measured}</b> tested</span>
+      <input class="srch" id="q" placeholder="search  /" value="${esc(state.q)}"></div>
+    <div class="note" style="margin:6px 0 14px">Found, not tested — provenance only, no verdict.
+      <span class="lnk" data-how>${state.how ? 'less' : 'why so few are tested'}</span></div>
+    ${state.how ? `<div class="ok0" style="margin-bottom:16px;line-height:1.7">
+      One tested cell is about 126 model calls, so testing all ${st.distinct_skills.toLocaleString()} would be ${(st.distinct_skills * 126 / 1e6).toFixed(1)}M calls. It is not going to happen, so the queue works down by stars.<br>
+      ${st.copies_folded.toLocaleString()} byte-identical copies were folded into their originals — one skill vendored into 86 repos is one skill, not 86.<br>
+      ${(100 * st.with_osi_licence / st.distinct_skills).toFixed(0)}% carry a licence. A row marked <span class="mono">not tested</span> means exactly that and nothing more.
+    </div>` : ''}
     <div class="chips">
       <button class="tog ${!state.cat ? 'on' : ''}" data-cat="">all</button>
-      ${cats.map(c => `<button class="tog ${state.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${c.label} <span class="dim">${c.n.toLocaleString()}</span></button>`).join('')}
-      <button class="tog ${state.licOnly ? 'on' : ''}" data-t="licOnly">OSI licence only</button>
+      ${cats.slice(0, 6).map(c => `<button class="tog ${state.cat === c.id ? 'on' : ''}" data-cat="${c.id}">${c.label.split(' ')[0]} <span class="dim">${c.n.toLocaleString()}</span></button>`).join('')}
+      <select class="tog" id="catmore" style="background:transparent;padding:3px 8px">
+        <option value="">more…</option>
+        ${cats.slice(6).map(c => `<option value="${c.id}" ${state.cat === c.id ? 'selected' : ''}>${c.label} (${c.n.toLocaleString()})</option>`).join('')}
+      </select>
+      <select class="tog" id="csort" style="background:transparent;padding:3px 8px">
+        ${[['stars', 'most starred'], ['copies', 'most copied'], ['tested', 'tested first'], ['size', 'largest'], ['name', 'by name']]
+          .map(([k, l]) => `<option value="${k}" ${state.catSort === k ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
     </div>
-    <div class="chips" style="margin-top:4px"><span class="dim" style="font-size:11.5px;align-self:center">sort</span>
-      ${[['stars', 'repo stars'], ['copies', 'times copied'], ['tested', 'tested first'], ['size', 'largest'], ['name', 'name']]
-        .map(([k, l]) => `<button class="tog ${state.catSort === k ? 'on' : ''}" data-csort="${k}">${l}</button>`).join('')}
-    </div>
-    <div class="note" style="margin:10px 0">
-      ${filtered.length >= 600 ? 'First 600 matches. ' : `${filtered.length.toLocaleString()} match. `}
-      ${searchingAll ? `Searching all ${st.distinct_skills.toLocaleString()}.` : `Searching the top ${st.top_tier.toLocaleString()} by stars — <span class="lnk" data-catall>search all ${st.distinct_skills.toLocaleString()}</span>.`}
-      ${st.described ? `<span class="dim"> ${Math.min(100, Math.round(100 * st.described / st.top_tier))}% of the top ${st.top_tier.toLocaleString()} carries the author's own description (${st.described_total ? st.described_total.toLocaleString() : st.described.toLocaleString()} fetched in all); the rest are categorised from the name alone, which is weaker.</span>` : ''}
-    </div>
+    <div class="note" style="margin:10px 0">${filtered.length >= 600 ? 'first 600 of many' : filtered.length.toLocaleString() + ' match'}${searchingAll ? '' : ` · <span class="lnk" data-catall>search all ${st.distinct_skills.toLocaleString()}</span>`}</div>
     <div class="colh" style="grid-template-columns:minmax(0,1fr) 84px 74px 96px"><span>skill</span><span>copied</span><span>size</span><span>status</span></div>
     ${hits.length === 0 ? `<div class="note t">Nothing matches “${esc(q)}”.</div>` : ''}
     ${hits.map(row => `<div class="item" style="grid-template-columns:minmax(0,1fr) 84px 74px 96px">
@@ -280,22 +281,45 @@ function money(x) {
 }
 
 function renderHome() {
+  return state.view === 'catalogue'
+    ? `<div class="wrap">${topBar()}${renderCatalogue()}${footer()}</div>`
+    : `<div class="wrap">${topBar()}${renderTested()}${footer()}</div>`;
+}
+
+/**
+ * One question, two views, and nothing else competing at the top.
+ *
+ * The page previously opened with two stacked caveat boxes, nine chips and a
+ * corpus line carrying six intervals — six lines of statistics before a single
+ * skill. Every one of those facts is true and worth keeping, but a reader who
+ * has to absorb all of them before seeing any content will not read any of them.
+ * They now sit one disclosure away, on the number they qualify.
+ */
+function topBar() {
+  const cat = (CAT_FULL || CAT);
+  const nCat = cat ? cat.stats.distinct_skills : null;
+  return `<div class="paste"><input id="skillurl" placeholder="paste a skill's GitHub URL to test it" value="${esc(state.url)}">
+      <button class="go" data-run ${state.url.length > 4 ? '' : 'disabled'}>Test it</button></div>
+    <div class="tabs" style="margin:18px 0 20px">
+      <button data-view="tested" class="${state.view === 'tested' ? 'on' : ''}">Tested <span class="dim">${SK.length}</span></button>
+      <button data-view="catalogue" class="${state.view === 'catalogue' ? 'on' : ''}">All skills <span class="dim">${nCat ? nCat.toLocaleString() : '…'}</span></button>
+    </div>`;
+}
+
+function renderTested() {
   let list = SK.filter(sk => {
     if (state.q && !(sk + ' ' + D.S[sk].repo).toLowerCase().includes(state.q.toLowerCase())) return false;
     if (state.only) { const f = fitOf(sk, myModel); if (!f || !f.ok) return false; }
     return true;
   });
-  // Your own tested skills always sort first and carry a `yours` tag; the chosen
-  // sort orders everything after them.
   const rateOr = (sk, d) => { const f = fitOf(sk, myModel); return f ? f.r : d; };
   const sorters = {
-    fit:     (a, b) => rateOr(b, -1) - rateOr(a, -1),
-    worst:   (a, b) => rateOr(a, 2) - rateOr(b, 2),
-    stars:   (a, b) => (D.S[b].stars || 0) - (D.S[a].stars || 0),
-    copies:  (a, b) => (D.S[b].copies || 0) - (D.S[a].copies || 0),
-    cost:    (a, b) => (costOf(a) ?? Infinity) - (costOf(b) ?? Infinity),
-    size:    (a, b) => D.S[b].chars - D.S[a].chars,
-    name:    (a, b) => a.localeCompare(b),
+    fit:    (a, b) => rateOr(b, -1) - rateOr(a, -1),
+    worst:  (a, b) => rateOr(a, 2) - rateOr(b, 2),
+    cost:   (a, b) => (costOf(a) ?? Infinity) - (costOf(b) ?? Infinity),
+    copies: (a, b) => (D.S[b].copies || 0) - (D.S[a].copies || 0),
+    stars:  (a, b) => (D.S[b].stars || 0) - (D.S[a].stars || 0),
+    name:   (a, b) => a.localeCompare(b),
   };
   list.sort((a, b) => {
     const ya = state.yours.includes(a) ? 1 : 0, yb = state.yours.includes(b) ? 1 : 0;
@@ -303,81 +327,76 @@ function renderHome() {
     return (sorters[state.sort] || sorters.fit)(a, b);
   });
   const fits = SK.filter(sk => { const f = fitOf(sk, myModel); return f && f.ok; }).length;
-  /**
-   * The corpus line carries its interval, always.
-   *
-   * It briefly read "3B 89% · 4B 57%", which looks like a 3B model beating a 4B
-   * by 32 points — a striking finding, and completely spurious: those cells were
-   * 3 cases and 7 runs, with intervals of [0.35-1.00] and [0.25-0.84] that
-   * overlap almost entirely. Two bare percentages side by side invite exactly the
-   * comparison the data cannot support, which is the confidently-wrong number
-   * this whole product exists to prevent — on its own front page.
-   *
-   * So every class shows its interval, and a class still too thin to compare is
-   * marked rather than quietly ranked beside the solid ones.
-   */
+  const cls = M[myModel].cls;
+
+  return `
+    <div class="lhead"><h2 style="font-size:19px">Does it run on <span class="mono" style="color:var(--ac)">${cls}</span>?</h2>
+      <span class="ct"><b>${fits}</b> of ${SK.length} clear ${BAR.pass.toFixed(2)}</span>
+      <input class="srch" id="q" placeholder="search  /" value="${esc(state.q)}"></div>
+
+    <div class="chips" style="margin-bottom:16px">
+      <button class="tog ${state.only ? 'on' : ''}" data-t="only">only what passes</button>
+      <select class="tog" id="msort" style="background:transparent;padding:3px 8px">
+        ${[['fit', 'best first'], ['worst', 'worst first'], ['cost', 'cheapest'], ['copies', 'most copied'], ['stars', 'most starred'], ['name', 'by name']]
+          .map(([k, l]) => `<option value="${k}" ${state.sort === k ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
+      <button class="tog" data-how>${state.how ? 'hide' : 'how to read this'}</button>
+    </div>
+
+    ${state.how ? howToRead() : ''}
+
+    <div class="colh" style="grid-template-columns:minmax(0,1fr) 96px 92px 84px"><span>skill</span><span>on ${cls}</span><span>per run</span><span>min-spec</span></div>
+    ${list.map(sk => {
+      const f = fitOf(sk, myModel), sp = specOf(sk), sm = D.S[sk];
+      const stopped = !f && discardedOf(sk, M[myModel].m);
+      return `<div class="item ${state.yours.includes(sk) ? 'yours' : ''}" tabindex="0" data-go="${sk}" style="grid-template-columns:minmax(0,1fr) 96px 92px 84px">
+        <div><div><span class="nm">${title(sk)}</span><span class="au">${esc(sm.repo)}</span>
+          ${state.yours.includes(sk) ? '<span class="pill ac">yours</span>' : ''}</div>
+          <div class="ds">${miniTrackInline(sk)}</div></div>
+        <div><span class="v ${f && f.ok ? '' : 'no'}">${f ? p2(f.r) : (stopped ? '<span class="pill warn">stopped</span>' : '—')}</span>${f && f.a.thin ? '<span title="thin evidence — few cases" style="color:var(--warn);font-family:var(--mono)">~</span>' : ''}
+          <div class="sb" style="color:var(--fg4)">${f ? `${p2(f.a.lo)}–${p2(f.a.hi)}` : ''}</div></div>
+        <div class="mono" style="font-size:11.5px;color:var(--fg3)">${money(costOf(sk))}</div>
+        <div class="spec ${sp && sp.min_spec ? '' : 'no'}">${sp ? specLabel(sp.min_spec) : '—'}</div></div>`;
+    }).join('')}
+    <div class="note t">${MET.runs.toLocaleString()} runs · ${MET.run_window.last.slice(0, 10)} · <span class="kbd">/</span> to search</div>`;
+}
+
+/** A one-line bar per model. Replaces four lines of per-row metadata with the
+ *  one thing the row is actually about: how this skill does as models grow. */
+function miniTrackInline(sk) {
+  return `<span class="mtrack" style="display:inline-flex;vertical-align:middle">${M.map((m, i) => {
+    const a = cell(sk, m.m, 'A');
+    if (!a) return `<i style="height:3px;opacity:.25"></i>`;
+    const ok = rate(a) >= BAR.pass;
+    return `<i class="${ok ? 'ok' : ''} ${i === myModel ? 'you' : ''}" title="${esc(m.cls)} ${p2(rate(a))}" style="height:${Math.max(3, Math.min(18, rate(a) * 18))}px"></i>`;
+  }).join('')}</span> <span style="color:var(--fg4);font-size:11px">${M[0].cls} → ${M[M.length - 1].cls}</span>`;
+}
+
+/**
+ * Everything that used to shout from the top of the page, now behind one button.
+ * Nothing was deleted — a reader who wants the caveats gets all of them, and a
+ * reader who wants the answer is not made to read them first.
+ */
+function howToRead() {
+  const i = MET.integrity;
+  const clean = i.boring === 0 && i.provider_substitutions === 0 && i.cached_responses === 0;
   const THIN_N = 30;
   const corpus = M.map(m => {
     if (!m.A) return null;
     const a = m.A.substance;
     const thin = a.n_calls < THIN_N;
-    return `<span class="mono" style="${thin ? 'opacity:.65' : ''}">${m.cls} ${pc(a.rate)}<span style="color:var(--fg4)"> ${p2(a.lo)}–${p2(a.hi)}</span>${thin ? '<span title="too few runs to compare against the others" style="color:var(--warn)">~</span>' : ''}</span>`;
+    return `${m.cls} ${pc(a.rate)} <span style="color:var(--fg4)">${p2(a.lo)}–${p2(a.hi)}</span>${thin ? '<span style="color:var(--warn)">~</span>' : ''}`;
   }).filter(Boolean).join(' · ');
-  const thinClasses = M.filter(m => m.A && m.A.substance.n_calls < THIN_N).map(m => m.cls);
 
-  return `<div class="wrap">
-    <div class="paste"><input id="skillurl" placeholder="github.com/owner/repo — test a skill of your own" value="${esc(state.url)}">
-      <button class="go" data-run ${state.url.length > 4 ? '' : 'disabled'}>Test it</button></div>
-    <div class="subline"><span>against <span class="mono">${M.length}</span> measured models · <span class="mono">${MET.cases}</span> cases · <span class="mono">${MET.runs.toLocaleString()}</span> runs</span>
-      <span class="dim">·</span><span class="lnk" data-sample>use a sample</span>
-      <span class="dim">·</span><span class="dim">${MET.lanes.join(' + ')} lane</span></div>
-
-    ${integrityBanner()}
-
-    <div class="lhead"><h2>Measured</h2>
-      <span class="ct"><b>${fits}</b> of ${SK.length} clear your bar on <span class="mono">${M[myModel].cls}</span></span>
-      <input class="srch" id="q" placeholder="search  /" value="${esc(state.q)}"></div>
-    <div class="chips"><button class="tog ${state.only ? 'on' : ''}" data-t="only">only what clears ${M[myModel].cls}</button>
-      <button class="tog ${BAR.strict ? 'on' : ''}" data-t="strict">strict pass only</button></div>
-    <div class="chips" style="margin-top:4px"><span class="dim" style="font-size:11.5px;align-self:center">sort</span>
-      ${[['fit', 'best on ' + M[myModel].cls], ['worst', 'worst first'], ['cost', 'cheapest to run'], ['copies', 'most copied'], ['stars', 'repo stars'], ['size', 'largest'], ['name', 'name']]
-        .map(([k, l]) => `<button class="tog ${state.sort === k ? 'on' : ''}" data-msort="${k}">${l}</button>`).join('')}</div>
-
-    <div class="ok0" style="margin:14px 0 18px">Corpus level, where the numbers have power — ${corpus} across ${MET.skills} skills, each with its 95% interval. Per-skill cells below rest on <b>${MET.cases_per_cell || '3–7'} cases each</b>, so they resolve coarsely. Read a row as a direction; read this line as a rate.${thinClasses.length ? `<br><span style="color:var(--warn)">~</span> <span class="dim">${thinClasses.join(', ')} ${thinClasses.length > 1 ? 'are' : 'is'} still being measured — too few runs to rank against the rest. Intervals that wide cannot separate two models, so do not read an ordering into them yet.</span>` : ''}</div>
-
-    <div class="colh" style="grid-template-columns:minmax(0,1fr) 74px 108px 76px 76px"><span>skill</span><span>${M[0].cls} → ${M[M.length - 1].cls}</span><span>on ${M[myModel].cls}</span><span>per run</span><span>min-spec</span></div>
-    ${list.map(sk => {
-      const f = fitOf(sk, myModel), sp = specOf(sk), s = D.S[sk];
-      return `<div class="item ${state.yours.includes(sk) ? 'yours' : ''}" tabindex="0" data-go="${sk}" style="grid-template-columns:minmax(0,1fr) 74px 108px 76px 76px">
-        <div><div><span class="nm">${title(sk)}</span><span class="au">${esc(s.repo)}</span>
-          ${state.yours.includes(sk) ? '<span class="pill ac">yours</span>' : ''}
-          ${!s.license_ok ? '<span class="pill warn" title="' + esc(s.license_note) + '">no licence</span>' : ''}</div>
-          <div class="ds">${(s.chars / 1000).toFixed(1)}k chars · ${s.cases} cases${s.categories && s.categories.length ? ' · ' + s.categories.map(g => CATLABEL[g] || g).join(' · ') : ''}</div>
-          <div class="sb" style="color:var(--fg4)">${s.stars.toLocaleString()}★ <span title="stars belong to the repository, not to this skill">repo</span>${s.copies ? ` · copied into ${s.copies} other repo${s.copies > 1 ? 's' : ''}` : ''}${s.license_ok ? '' : ' · no licence'}</div></div>
-        <div>${miniTrack(sk)}</div>
-        <div><span class="v ${f && f.ok ? '' : 'no'}">${f ? p2(f.r) : (discardedOf(sk, M[myModel].m) ? '<span class="pill warn" title="' + esc(discardedOf(sk, M[myModel].m).reason) + '">stopped</span>' : '—')}</span>${f && f.a.thin ? '<span title="thin evidence" style="color:var(--warn);font-family:var(--mono)">~</span>' : ''}${f && f.a.unstable ? '<span title="unstable across repeat runs" style="color:var(--warn);font-family:var(--mono)">±</span>' : ''}
-          <div class="ci">${f ? ciLine(f.a) : ''}</div></div>
-        <div class="mono" style="font-size:11.5px;color:var(--fg3)">${money(costOf(sk))}</div>
-        <div class="spec ${sp && sp.min_spec ? '' : 'no'}">${sp ? specLabel(sp.min_spec) : '—'}
-          ${sp && sp.first_passes_at && sp.first_passes_at !== sp.min_spec ? `<div class="sb" style="color:var(--ac)">first passes at ${sp.first_passes_at}</div>` : ''}</div></div>`;
-    }).join('')}
-    <div class="note t">Every number is from <span class="mono">${MET.runs.toLocaleString()}</span> real runs, ${MET.run_window.last.slice(0, 10)}. <span class="kbd">/</span> search</div>
-
-    ${renderCatalogue()}
-    ${footer()}</div>`;
-}
-
-/* BORING is a smoke alarm, so it leads the page when it goes off. */
-function integrityBanner() {
-  const i = MET.integrity;
-  if (i.boring === 0 && i.provider_substitutions === 0 && i.cached_responses === 0) {
-    return `<div class="ok0"><b>Zero BORING · no substituted models · no cached responses.</b> Not one context overflow, missing tool or malformed skill file across ${MET.runs.toLocaleString()} runs, nothing was served by a model other than the one requested, and nothing came back from a cache. The measurement is trustworthy at this level.</div>`;
-  }
-  return `<div class="alarm"><b>The harness is suspect.</b>
-    ${i.boring ? `<b>${i.boring} BORING</b> failures (${pc(i.boring_share)}) — context overflow, a missing tool or a malformed file. ` : ''}
-    ${i.provider_substitutions ? `<b>${i.provider_substitutions} rows served by a different model than the one requested.</b> ` : ''}
-    ${i.cached_responses ? `<b>${i.cached_responses} cached responses</b> — a cached answer collapses the repeat-run spread and fabricates a tight interval. ` : ''}
-    A non-zero count here invalidates everything below it until it is chased down. In the reference dataset this number was zero across 1,080 small-model runs; an earlier run showed 16.5% and every one of those was our own rate-limiting and connection handling, not the corpus.</div>`;
+  return `<div class="ok0" style="margin-bottom:18px;line-height:1.7">
+    <b>The number</b> is how often the skill did the job, over ${MET.cases_per_cell || '3–7'} cases × repeat trials. The range beside it is the 95% interval — where two ranges overlap, the difference is not real.<br>
+    <b>Min-spec</b> is the smallest class where <em>every</em> model we tested passed. <b>~</b> marks thin evidence: few enough cases that one changes the number a lot.<br>
+    <b>Per run</b> is what one invocation actually cost, from the provider's own accounting.<br>
+    <b>Corpus level</b>, where the numbers have power — <span class="mono">${corpus}</span><br>
+    ${clean
+      ? `<b style="color:var(--ac)">Integrity clean.</b> Across ${MET.runs.toLocaleString()} runs: no context overflows, no model substituted for the one requested, nothing served from a cache.`
+      : `<b style="color:var(--warn)">Integrity suspect.</b> ${i.boring} BORING · ${i.provider_substitutions} substitutions · ${i.cached_responses} cached. A non-zero count here invalidates everything above it until chased down.`}
+  </div>`;
 }
 
 function footer() {
@@ -579,7 +598,9 @@ async function probeEngine() {
     const r = await fetch('api/health', { signal: AbortSignal.timeout(2500) });
     ENGINE = r.ok ? await r.json() : false;
   } catch { ENGINE = false; }
-  render();
+  // The probe runs at boot and may resolve before the measurements land, so it
+  // must not force a render into an empty dataset.
+  if (D) render();
   return ENGINE;
 }
 
@@ -762,6 +783,8 @@ document.addEventListener('click', e => {
   if (t('[data-fm]')) { dstate.fm = +t('[data-fm]').dataset.fm; render(); return; }
   if (t('[data-rung]')) { const k = +t('[data-rung]').dataset.rung; dstate.openRung = dstate.openRung === k ? null : k; render(); return; }
   if (t('[data-t]')) { const k = t('[data-t]').dataset.t; if (k === 'strict') BAR.strict = !BAR.strict; else state[k] = !state[k]; render(); return; }
+  if (t('[data-view]')) { state.view = t('[data-view]').dataset.view; state.q = ''; state.how = false; render(); scrollTo(0, 0); return; }
+  if (t('[data-how]')) { state.how = !state.how; render(); return; }
   if (t('[data-byok]')) { BYOK.open = true; BYOK.error = ''; render(); return; }
   if (t('[data-byok-forget]')) { byok.forget(); BYOK = { ...BYOK, open: true, status: null, res: null, cases: [], error: '' }; render(); return; }
   if (t('[data-byok-check]')) {
@@ -803,13 +826,18 @@ document.addEventListener('click', e => {
   }
   if (t('[data-catall]')) { loadCatalogue(true); return; }
   if (t('[data-cat]')) { state.cat = t('[data-cat]').dataset.cat; render(); return; }
-  if (t('[data-csort]')) { state.catSort = t('[data-csort]').dataset.csort; render(); return; }
-  if (t('[data-msort]')) { state.sort = t('[data-msort]').dataset.msort; render(); return; }
   if (t('[data-sample]')) { state.url = 'github.com/anthropics/skills/tree/main/skills/pdf'; render(); return; }
   if (t('[data-run]')) { startRun(state.url); scrollTo(0, 0); return; }
   if (t('[data-cancel]')) { clearInterval(jobTimer); route = null; render(); return; }
 });
-document.addEventListener('input', e => {
+/** Selects fire `change`, text inputs fire `input`; both route here. */
+function handleControl(e) {
+  if (e.target.id === 'msort') { state.sort = e.target.value; render(); return; }
+  if (e.target.id === 'csort') { state.catSort = e.target.value; render(); return; }
+  if (e.target.id === 'catmore') { if (e.target.value) { state.cat = e.target.value; render(); } return; }
+}
+document.addEventListener('change', handleControl);
+document.addEventListener('input', e => { handleControl(e); 
   if (e.target.id === 'skillurl') {
     state.url = e.target.value;
     const b = document.querySelector('[data-run]'); if (b) b.disabled = state.url.trim().length <= 4;
@@ -841,11 +869,22 @@ fetch('./data/fits.json').then(r => {
 }).then(j => {
   D = j; M = j.M; MET = j.meta; SK = Object.keys(j.S).sort();
   BAR.pass = MET.bar ?? 0.80;
-  // Default the lens to the smallest measured class — the tier a reader is most
-  // likely to be constrained to, and the one where the answer is least obvious.
-  myModel = 0;
+  /**
+   * Default the lens to the most useful class, not the smallest.
+   *
+   * Defaulting to 1B meant the page opened with "0 of 20 clear your bar" — every
+   * row a failure, which reads as a broken site rather than a finding. The tier
+   * people actually run on a laptop is 4B-8B, so default to the largest
+   * non-frontier class that has real data. The smallest is one click away and the
+   * bad news is still there when you look for it.
+   */
+  const usable = M.map((m, i) => ({ m, i })).filter(x => x.m.cls !== 'frontier' && x.m.A && x.m.A.substance.n_calls >= 30);
+  myModel = usable.length ? usable[usable.length - 1].i : 0;
   wireHeader();
   render();
+  // The tab shows a count, so the top tier is fetched up front. It is small; the
+  // full index still loads only when a search actually needs it.
+  loadCatalogue(false);
 }).catch(err => {
   document.getElementById('app').innerHTML =
     `<div class="wrap"><div class="alarm"><b>No data.</b> ${esc(err.message)}<br>

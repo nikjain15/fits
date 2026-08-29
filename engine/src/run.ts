@@ -36,6 +36,7 @@ import { ollama } from "./providers/ollama.ts";
 import { openrouter } from "./providers/openrouter.ts";
 import { conduit } from "./providers/conduit.ts";
 import { ProviderError, withRetry, type Provider } from "./providers/index.ts";
+import { configureHttp } from "./net.ts";
 import { HARNESS_VERSION, type Condition, type ModelSpec, type ResultRow } from "./types.ts";
 import * as store from "./store.ts";
 
@@ -399,6 +400,7 @@ async function runCell(cell: Cell, runId: string, spend: { usd: number }): Promi
 
 // ---------------------------------------------------------------- main
 async function main() {
+  configureHttp();
   const runId = randomUUID().slice(0, 8);
   const { runnable, blocked } = available();
 

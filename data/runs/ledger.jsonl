@@ -17,3 +17,4 @@
 {"event":"run_end","run_id":"00015c27","cells_done":1,"cells_discarded":0,"spend_usd":0.00091745,"ts":"2026-08-29T13:13:41.488Z"}
 {"event":"run_start","run_id":"9e83a0a3","cells":1,"est_calls":14.42,"est_usd":0.0019248536999999998,"models":["gemma-3-4b"],"ts":"2026-08-29T13:14:21.567Z"}
 {"event":"run_end","run_id":"9e83a0a3","cells_done":1,"cells_discarded":0,"spend_usd":0.0016936999999999998,"ts":"2026-08-29T13:15:02.271Z"}
+{"event":"run_start","run_id":"20b9f023","cells":260,"est_calls":14634.240000000063,"est_usd":5.513724925056008,"models":["llama-3.2-1b","llama-3.2-3b","ministral-3b","gemma-3-4b","qwen2.5-7b","qwen3-8b","llama-3.1-8b","granite-4.1-8b","ministral-8b","qwen3.5-9b","gemma-3-12b","mistral-nemo-12b","claude-sonnet-5"],"ts":"2026-08-29T13:17:15.863Z"}

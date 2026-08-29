@@ -128,7 +128,7 @@ export const openrouter: Provider = {
         signal: ac.signal,
       });
     } catch (e: any) {
-      throw new ProviderError(redact(`openrouter network: ${e?.message ?? e}`), "network");
+      throw new ProviderError(redact(`openrouter network: ${e?.message ?? e}${e?.cause ? ` (${e.cause.code ?? e.cause.message ?? e.cause})` : ""}`), "network");
     } finally {
       clearTimeout(timer);
     }

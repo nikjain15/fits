@@ -559,18 +559,102 @@ function scopeSection(sk) {
 }
 
 /* ---------------------------------------------------------------- running */
+/* ================= running =================
+ * Two completely different screens, chosen by whether a local engine is there.
+ *
+ * With one: a real run, streamed. Without: a plain statement that a static page
+ * cannot run a model, and the command to do it yourself. The mockup faked this;
+ * faking it here would be the one dishonesty the whole product is against.
+ */
+let ENGINE = null;        // null = unknown, false = absent, object = present
+let JOB = null;
+let jobTimer = null;
+
+async function probeEngine() {
+  if (ENGINE !== null) return ENGINE;
+  try {
+    const r = await fetch('api/health', { signal: AbortSignal.timeout(2500) });
+    ENGINE = r.ok ? await r.json() : false;
+  } catch { ENGINE = false; }
+  render();
+  return ENGINE;
+}
+
+async function startRun(url) {
+  route = '@run';
+  JOB = { state: 'starting', message: 'contacting the local engine', models: [], cases: [], log: [] };
+  render();
+  const eng = await probeEngine();
+  if (!eng) { render(); return; }
+  try {
+    const r = await fetch('api/test', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    const j = await r.json();
+    if (!j.id) { JOB = { state: 'error', message: j.error || 'the engine refused the request', models: [], cases: [], log: [] }; render(); return; }
+    clearInterval(jobTimer);
+    jobTimer = setInterval(async () => {
+      if (route !== '@run') { clearInterval(jobTimer); return; }
+      try {
+        const s = await (await fetch('api/job/' + j.id)).json();
+        JOB = s;
+        if (s.state === 'done' || s.state === 'error') clearInterval(jobTimer);
+        render();
+      } catch { /* the engine went away mid-run; the next tick will show it */ }
+    }, 900);
+  } catch (e) {
+    JOB = { state: 'error', message: String(e.message || e), models: [], cases: [], log: [] };
+    render();
+  }
+}
+
 function renderRun() {
-  return `<div class="wrap"><h1>${esc(state.url.split('/').pop() || 'your skill')}</h1>
-    <div class="dsub">queued for the next engine pass</div>
-    <div class="alarm" style="margin-top:20px"><b>This site cannot run a model.</b> It is a static page over JSON that an engine produced elsewhere — there is no inference in your browser and no server behind this page. Your request has been noted locally and nothing has been sent anywhere.</div>
-    <div class="note">A real run of one skill is ${M.length} models × 7 cases × 6 trials × 3 repeat runs, and it lands only when the whole cell is complete — a half-measured cell is never published. To run it yourself:</div>
-    <div class="rgx" style="margin-top:14px;border-radius:8px"><div class="kv">
-      <span class="k">clone</span><span class="v">github.com/nikjain15/fits</span>
-      <span class="k">then</span><span class="v">npx tsx engine/src/run.ts --skill &lt;id&gt; --plan</span>
-      <span class="k">and</span><span class="v">… --yes  (after the dry-run estimate)</span></div></div>
-    <div class="note t"><span class="lnk" data-cancel>back</span></div>
+  const name = esc(state.url.split('/').filter(Boolean).pop() || 'your skill');
+
+  if (ENGINE === false) {
+    return `<div class="wrap"><h1>${name}</h1>
+      <div class="dsub">no local engine</div>
+      <div class="alarm" style="margin-top:20px"><b>This page cannot run a model.</b> It is static JSON on GitHub Pages — no inference in your browser, no server behind it. Nothing was sent anywhere, and no result has been invented for you.</div>
+      <div class="note">Run it yourself and the same button becomes real:</div>
+      <div class="rgx" style="margin-top:14px;border-radius:8px"><div class="kv">
+        <span class="k">clone</span><span class="v">github.com/nikjain15/fits</span>
+        <span class="k">install</span><span class="v">npm install</span>
+        <span class="k">run</span><span class="v">npm run serve</span>
+        <span class="k">then</span><span class="v">open localhost:8099 and paste the same URL</span></div></div>
+      <div class="note t">The local engine uses whatever models you have — Ollama needs no key and costs nothing.</div>
+      <div class="note t"><span class="lnk" data-cancel>back</span></div>
+      ${footer()}</div>`;
+  }
+
+  const j = JOB || { state: 'starting', message: '', models: [], cases: [], log: [] };
+  const done = j.models.filter(m => m.state === 'done' || m.state === 'failed').length;
+  const frac = j.models.length ? done / j.models.length : 0;
+
+  return `<div class="wrap"><h1>${name}</h1>
+    <div class="dsub">${j.skillId ? esc(j.skillId) : 'local engine'} · ${j.state}</div>
+    ${j.state === 'error'
+      ? `<div class="alarm" style="margin-top:18px"><b>Stopped.</b> ${esc(j.message)}</div>`
+      : `<div class="prog"><i style="width:${Math.round(frac * 100)}%"></i></div>
+         <div class="note" style="display:flex;gap:18px"><span>${esc(j.message || '')}</span>
+           <span style="margin-left:auto"><span class="lnk" data-cancel>back</span></span></div>`}
+
+    ${j.cases.length ? `<div class="sec" style="margin-top:26px"><div class="sh">The cases, derived from the skill's own text</div>
+      <div class="ok0" style="margin-bottom:14px"><b>auto-derived — nobody has accepted these.</b> The assertions come from commands and claims the skill states about itself; no model wrote them. Weaker evidence than the hand-authored suites, and never blended into the corpus rates.</div>
+      ${j.cases.map(c => `<div class="at" style="grid-template-columns:96px minmax(0,1fr)">
+        <span class="k">${esc(c.kind)}</span>
+        <span class="d">${esc(c.prompt)}<div class="sb" style="color:var(--fg4);margin-top:3px">${esc(c.rationale)}</div></span></div>`).join('')}</div>` : ''}
+
+    ${j.models.length ? `<div class="sec"><div class="sh">Models</div>
+      ${j.models.map(m => `<div class="rr"><span class="st ${m.state === 'running' ? 'go' : ''}">${m.state}</span>
+        <span><span class="mono">${esc(m.cls)}</span> <span class="dim" style="font-size:11px">${esc(m.key)}</span></span>
+        <span class="mono" style="text-align:right;font-size:12px">${m.pass === undefined ? '—' : p2(m.pass)}</span></div>`).join('')}</div>` : ''}
+
+    ${j.state === 'done' ? `<div class="note t">Landed in <span class="mono">data/nodes/</span> like any other measurement. Run <span class="mono">npx tsx engine/src/publish.ts</span> to fold it into the site.</div>` : ''}
+    ${j.log && j.log.length ? `<div class="sec"><div class="sh">Log</div>${j.log.map(l => `<div class="note mono" style="font-size:11.5px">${esc(l)}</div>`).join('')}</div>` : ''}
     ${footer()}</div>`;
 }
+
 
 /* ---------------------------------------------------------------- shell */
 function render() {
@@ -599,8 +683,8 @@ document.addEventListener('click', e => {
   if (t('[data-csort]')) { state.catSort = t('[data-csort]').dataset.csort; render(); return; }
   if (t('[data-msort]')) { state.sort = t('[data-msort]').dataset.msort; render(); return; }
   if (t('[data-sample]')) { state.url = 'github.com/anthropics/skills/tree/main/skills/pdf'; render(); return; }
-  if (t('[data-run]')) { route = '@run'; render(); scrollTo(0, 0); return; }
-  if (t('[data-cancel]')) { route = null; render(); return; }
+  if (t('[data-run]')) { startRun(state.url); scrollTo(0, 0); return; }
+  if (t('[data-cancel]')) { clearInterval(jobTimer); route = null; render(); return; }
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'skillurl') {
@@ -646,3 +730,7 @@ fetch('./data/fits.json').then(r => {
      <span class="mono">npx tsx engine/src/run.ts --lane local --yes</span><br>
      <span class="mono">npx tsx engine/src/publish.ts</span></div></div>`;
 });
+
+// Ask once at boot whether a local engine is present, so the Test button knows
+// whether it can actually run something or must explain that it cannot.
+probeEngine();

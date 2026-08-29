@@ -19,6 +19,9 @@
  * the suite is content-hashed and the hash is part of every node key downstream.
  */
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { REPO_ROOT } from "./corpus.ts";
 import type { Fixtures } from "./tools.ts";
 import { CASES as BASE_CASES } from "./cases.base.ts";
 
@@ -115,8 +118,43 @@ const DEEP: Record<string, TestCase[]> = {
   anthropic__pdf: PDF_SUITE,
 };
 
+/**
+ * Suites derived from a skill's own text for a skill pasted into the local UI.
+ *
+ * Kept in a separate lookup, and NEVER surfaced by `allSkillIds()`, so an
+ * auto-derived suite cannot wander into a corpus-level rate. Nobody has accepted
+ * these cases; `acceptance()` reports that, and the site shows it.
+ */
+function autoSuite(skillId: string): TestCase[] | null {
+  const f = join(REPO_ROOT, "corpus", "auto", `${skillId}.cases.json`);
+  if (!existsSync(f)) return null;
+  try {
+    const j = JSON.parse(readFileSync(f, "utf8"));
+    return (j.cases as any[]).map((c) => ({
+      ...c,
+      // Regexes survive JSON as their source string; rebuild them here so the
+      // grader gets a real RegExp rather than silently matching nothing.
+      expect: reviveExpect(c.expect),
+    }));
+  } catch { return null; }
+}
+
+function reviveExpect(e: any): any {
+  const re = (v: any) => {
+    if (v instanceof RegExp) return v;
+    const s = String(v);
+    const m = /^\/(.*)\/([gimsuy]*)$/s.exec(s);
+    return m ? new RegExp(m[1], m[2]) : new RegExp(s.replace(/^\/|\/$/g, ""), "i");
+  };
+  if (e.kind === "invoke") return { ...e, args: Object.fromEntries(Object.entries(e.args).map(([k, v]) => [k, re(v)])) };
+  if (e.kind === "abstain") return { ...e, answer: (e.answer as any[]).map(re) };
+  return { ...e, answer: re(e.answer) };
+}
+
 export function suiteFor(skillId: string): TestCase[] {
   if (DEEP[skillId]) return DEEP[skillId];
+  const auto = autoSuite(skillId);
+  if (auto) return auto;
   return (BASE_CASES as unknown as TestCase[]).filter((c) => c.skillId === skillId);
 }
 
@@ -141,7 +179,7 @@ export function suiteHash(cases: TestCase[]): string {
 export interface Acceptance {
   skillId: string;
   hash: string;
-  authored_by: "human" | "frontier-model";
+  authored_by: "human" | "frontier-model" | "auto-derived";
   accepted: boolean;
   accepted_by: string;
   date: string;
@@ -151,6 +189,22 @@ export interface Acceptance {
 export function acceptance(skillId: string): Acceptance {
   const cases = suiteFor(skillId);
   const deep = Boolean(DEEP[skillId]);
+
+  // An auto-derived suite is accepted for RUNNING — otherwise the local Test
+  // button could never do anything — but it is never described as human-accepted.
+  // The distinction is the whole reason this field exists: a suite nobody has
+  // read is weaker evidence, and the site has to be able to say so.
+  if (!deep && autoSuite(skillId)) {
+    return {
+      skillId, hash: suiteHash(cases),
+      authored_by: "auto-derived",
+      accepted: cases.length > 0,
+      accepted_by: "(nobody — derived from the skill's own text)",
+      date: new Date().toISOString().slice(0, 10),
+      note: "Derived deterministically from the skill's own documented commands and claims. No human has reviewed these cases and no model wrote the assertions. Weaker evidence than the hand-authored suites, and never blended into corpus-level rates.",
+    };
+  }
+
   return {
     skillId,
     hash: suiteHash(cases),

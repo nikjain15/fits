@@ -28,3 +28,11 @@
 {"event":"run_start","run_id":"427b60e2","cells":225,"est_calls":13132.500000000055,"est_usd":3.6784764145439954,"models":["llama-3.2-1b","llama-3.2-3b","ministral-3b","gemma-3-4b","qwen2.5-7b","qwen3-8b","llama-3.1-8b","granite-4.1-8b","ministral-8b","qwen3.5-9b","gemma-3-12b","claude-sonnet-5"],"ts":"2026-08-29T14:53:34.850Z"}
 {"event":"preflight_excluded","run_id":"85985bd1","models":[{"key":"mistral-nemo-12b","why":"backpressure: rate limited: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"mistralai/mistral-nemo is temp"}],"ts":"2026-08-29T14:56:00.041Z"}
 {"event":"run_start","run_id":"85985bd1","cells":225,"est_calls":13132.500000000055,"est_usd":3.6784764145439954,"models":["llama-3.2-1b","llama-3.2-3b","ministral-3b","gemma-3-4b","qwen2.5-7b","qwen3-8b","llama-3.1-8b","granite-4.1-8b","ministral-8b","qwen3.5-9b","gemma-3-12b","claude-sonnet-5"],"ts":"2026-08-29T14:56:01.883Z"}
+{"event":"run_start","run_id":"a938f2ea","cells":1,"est_calls":12.36,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T15:27:19.603Z"}
+{"event":"run_end","run_id":"a938f2ea","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:27:48.159Z"}
+{"event":"run_start","run_id":"06d702bf","cells":1,"est_calls":18.54,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T15:29:32.644Z"}
+{"event":"run_end","run_id":"06d702bf","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:30:03.292Z"}
+{"event":"run_start","run_id":"ff27363d","cells":1,"est_calls":18.54,"est_usd":0,"models":["gemma2-2b-q4_0"],"ts":"2026-08-29T15:31:11.625Z"}
+{"event":"run_end","run_id":"ff27363d","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:31:37.501Z"}
+{"event":"run_start","run_id":"17fb6c41","cells":1,"est_calls":18.54,"est_usd":0,"models":["qwen2.5-7b-q4km"],"ts":"2026-08-29T15:31:38.185Z"}
+{"event":"run_end","run_id":"17fb6c41","cells_done":1,"cells_discarded":0,"spend_usd":0,"ts":"2026-08-29T15:32:36.584Z"}

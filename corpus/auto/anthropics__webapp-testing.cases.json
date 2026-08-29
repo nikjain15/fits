@@ -1,0 +1,70 @@
+{
+  "skillId": "anthropics__webapp-testing",
+  "repo": "anthropics/skills",
+  "path": "skills/webapp-testing/SKILL.md",
+  "authored_by": "auto-derived",
+  "accepted": false,
+  "generated_at": "2026-08-29T15:29:32.155Z",
+  "provenance": [
+    "invoke — from the skill's own documented command: chromium.launch",
+    "abstain — borrowed from a neighbouring skill's scope, so firing here is eager invocation",
+    "use_result — generic arithmetic over fixture data, identical for every skill so the tool-result step is comparable across them"
+  ],
+  "cases": [
+    {
+      "id": "anthropics__webapp-testing--auto-invoke",
+      "skillId": "anthropics__webapp-testing",
+      "kind": "invoke",
+      "prompt": "I need to create an automation script, include only Playwright logic (servers are managed automatically), using report.txt. Go ahead and do it.",
+      "fixtures": {
+        "files": {
+          "report.txt": "line one\nline two\nline three\n"
+        }
+      },
+      "expect": {
+        "kind": "invoke",
+        "tool": "bash",
+        "args": {
+          "command": "/chromium\\.launch|playwright\\.sync_api|browser\\.new_page|page\\.goto|page\\.wait_for_load_state|browser\\.close/i"
+        }
+      },
+      "rationale": "The skill documents `chromium.launch` for \"To create an automation script, include only Playwright logi\" (code-api, line 51)."
+    },
+    {
+      "id": "anthropics__webapp-testing--auto-abstain",
+      "skillId": "anthropics__webapp-testing",
+      "kind": "abstain",
+      "prompt": "Merge these two PDFs into one file — if that is outside what this skill does, say \"not my job\" and do not call any tool.",
+      "fixtures": {},
+      "expect": {
+        "kind": "abstain",
+        "answer": [
+          {}
+        ]
+      },
+      "rationale": "Borrowed from another catalogued skill's scope. This skill should decline rather than fire — which is how EAGER is measured."
+    },
+    {
+      "id": "anthropics__webapp-testing--auto-use-result",
+      "skillId": "anthropics__webapp-testing",
+      "kind": "use_result",
+      "prompt": "Read /work/counts.txt and reply with the total of the three numbers listed.",
+      "fixtures": {
+        "files": {
+          "/work/counts.txt": "alpha 14\nbeta 27\ngamma 9\n"
+        }
+      },
+      "expect": {
+        "kind": "use_result",
+        "tool": "read_file",
+        "answer": {},
+        "dataTokens": [
+          "14",
+          "27",
+          "9"
+        ]
+      },
+      "rationale": "14+27+9=50. Requires actually reading what the tool returned; the fixture's own numbers separate IGNORED from REASONING."
+    }
+  ]
+}

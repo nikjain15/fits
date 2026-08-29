@@ -1,0 +1,70 @@
+{
+  "skillId": "anthropics__docx",
+  "repo": "anthropics/skills",
+  "path": "skills/docx/SKILL.md",
+  "authored_by": "auto-derived",
+  "accepted": false,
+  "generated_at": "2026-08-29T15:31:11.177Z",
+  "provenance": [
+    "invoke — from the skill's own documented command: unzip -q doc.docx -d unpacked/",
+    "abstain — from a claim the skill makes about itself: \"A .docx is a ZIP archive of XML files.\"",
+    "use_result — generic arithmetic over fixture data, identical for every skill so the tool-result step is comparable across them"
+  ],
+  "cases": [
+    {
+      "id": "anthropics__docx--auto-invoke",
+      "skillId": "anthropics__docx",
+      "kind": "invoke",
+      "prompt": "I need to legacy .doc files must be converted first docx, using report.txt. Go ahead and do it.",
+      "fixtures": {
+        "files": {
+          "report.txt": "line one\nline two\nline three\n"
+        }
+      },
+      "expect": {
+        "kind": "invoke",
+        "tool": "bash",
+        "args": {
+          "command": "/unzip|find|edit|python scripts\\/office\\/validate\\.py|python scripts\\/merge_runs\\.py/i"
+        }
+      },
+      "rationale": "The skill documents `unzip -q doc.docx -d unpacked/` for \"Legacy .doc files must be converted first python scripts/off\" (fenced-block, line 46)."
+    },
+    {
+      "id": "anthropics__docx--auto-abstain",
+      "skillId": "anthropics__docx",
+      "kind": "abstain",
+      "prompt": "Answer in one short sentence, from the skill's instructions only. Do not run anything. According to this skill, what is ZIP archive of XML files?",
+      "fixtures": {},
+      "expect": {
+        "kind": "abstain",
+        "answer": [
+          {}
+        ]
+      },
+      "rationale": "The skill states: \"A .docx is a ZIP archive of XML files.\". Answerable from the text; any tool call here is eager invocation."
+    },
+    {
+      "id": "anthropics__docx--auto-use-result",
+      "skillId": "anthropics__docx",
+      "kind": "use_result",
+      "prompt": "Read /work/counts.txt and reply with the total of the three numbers listed.",
+      "fixtures": {
+        "files": {
+          "/work/counts.txt": "alpha 14\nbeta 27\ngamma 9\n"
+        }
+      },
+      "expect": {
+        "kind": "use_result",
+        "tool": "read_file",
+        "answer": {},
+        "dataTokens": [
+          "14",
+          "27",
+          "9"
+        ]
+      },
+      "rationale": "14+27+9=50. Requires actually reading what the tool returned; the fixture's own numbers separate IGNORED from REASONING."
+    }
+  ]
+}

@@ -7,9 +7,12 @@
   "scripts": {
     "run": "tsx engine/src/run.ts",
     "publish-data": "tsx engine/src/publish.ts",
-    "discover": "tsx engine/src/skills/discover.ts",
+    "discover": "tsx engine/src/discover.ts",
     "digest": "tsx engine/src/digest.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve": "tsx engine/src/serve.ts",
+    "enrich": "tsx engine/src/enrich.ts",
+    "publish": "tsx engine/src/publish.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

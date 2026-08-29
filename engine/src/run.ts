@@ -26,7 +26,10 @@
  */
 import { randomUUID } from "node:crypto";
 import { MODELS, available, byKey } from "./models.ts";
-import { loadCorpus, skillById, type CorpusSkill } from "./corpus.ts";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parseSkill } from "./skills/parse.ts";
+import { loadCorpus, skillById, REPO_ROOT, type CorpusSkill } from "./corpus.ts";
 import { suiteFor, suiteHash, acceptance, allSkillIds, type TestCase } from "./cases.ts";
 import { buildTools } from "./tools.ts";
 import { buildSystemPrompt, type ScopedSkill } from "./protocol.ts";
@@ -455,7 +458,32 @@ async function main() {
   if (modelArg) models = models.filter((m) => modelArg.split(",").includes(m.key));
 
   let skills = loadCorpus();
-  if (skillArg) skills = skills.filter((s) => skillArg.split(",").includes(s.id));
+
+  /**
+   * An auto-derived skill: pasted into the local UI, fetched, and given a suite
+   * built from its own text (engine/src/generate.ts). It runs through exactly the
+   * same path as a corpus skill — same classifier, same node store, same
+   * integrity checks — but it is tagged `auto-derived` on every row so it can
+   * never be mistaken for one of the human-accepted suites, and the site labels
+   * it accordingly rather than blending it into the corpus rates.
+   */
+  const autoArg = arg("auto-skill");
+  if (autoArg) {
+    const dir = join(REPO_ROOT, "corpus", "auto");
+    const md = join(dir, `${autoArg}.md`);
+    if (!existsSync(md)) {
+      console.error(`No auto-derived skill at ${md}. Nothing was run.`);
+      process.exit(1);
+    }
+    const parsed = parseSkill(readFileSync(md, "utf8"), autoArg);
+    skills = [{
+      id: autoArg, name: parsed.name, repo: "(pasted)", url: "", stars: 0,
+      parsed, license_ok: false, license_note: "pasted by the operator; provenance not checked",
+      measurable: true, unmeasurable_reason: "", discovered_via: "pasted into the local UI",
+    } as any];
+  } else if (skillArg) {
+    skills = skills.filter((s) => skillArg.split(",").includes(s.id));
+  }
 
   console.log(`\nfits ${HARNESS_VERSION} · run ${runId}`);
   console.log(`bar ${CFG.BAR} · ${CFG.TRIALS} trials x ${CFG.REPEATS} repeat runs · step cap ${CFG.MAX_STEPS}`);

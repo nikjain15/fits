@@ -56,7 +56,7 @@ function main() {
   const boring = rows.filter((r) => r.bucket === "BORING");
   const substituted = rows.filter((r) => r.served_model && r.served_model !== r.model_id);
   const cached = rows.filter((r) => r.cached);
-  const voided = nodes.filter((n) => n.discarded);
+  const voided = store.liveDiscards(nodes);
   const broke: string[] = [];
   if (boring.length) {
     const byKind = new Map<string, number>();

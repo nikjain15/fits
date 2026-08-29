@@ -97,3 +97,18 @@ export function appendTranscripts(lines: unknown[]): void {
   if (!lines.length) return;
   appendFileSync(join(RUNS, "transcripts.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
 }
+
+/**
+ * A discarded cell that has SINCE been measured successfully is not news. The
+ * stage-2 run of anthropic__pdf x gemma2-2b stopped early; the follow-up pass
+ * measured it in full. Reporting the stop as "what broke" while a valid rate for
+ * the same cell sits beside it would be reporting our own scheduling as a fault.
+ */
+export function liveDiscards(nodes: Array<{ inputs?: Record<string, unknown>; discarded: string; rows: unknown[] }>) {
+  const landed = new Set(
+    nodes.filter((n) => !n.discarded && n.rows.length)
+      .map((n) => `${n.inputs?.skill}|${n.inputs?.model}|${n.inputs?.condition}`),
+  );
+  return nodes.filter((n) =>
+    n.discarded && !landed.has(`${n.inputs?.skill}|${n.inputs?.model}|${n.inputs?.condition}`));
+}

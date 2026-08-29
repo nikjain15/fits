@@ -1,9 +1,9 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T08:26:41.368Z",
+  "generated": "2026-08-29T10:00:39.417Z",
   "bar": 0.8,
-  "runs": 2205,
-  "cells": 72,
+  "runs": 2430,
+  "cells": 80,
   "skills": 20,
   "cases": 64,
   "models": 2,
@@ -17,24 +17,27 @@
     "Q4_0",
     "Q4_K_M"
   ],
-  "context_windows": [],
+  "context_windows": [
+    8192,
+    32768
+  ],
   "digests": {
     "gemma2-2b-q4_0": "8ccf136fdd5298f3",
     "qwen2.5-7b-q4km": "845dbda0ea48ed74"
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T08:26:40.318Z"
+    "last": "2026-08-29T09:35:33.123Z"
   },
   "spend_usd": 0,
   "integrity": {
     "rows_dropped_truncated": 0,
-    "rows_dropped_unverifiable": 9,
+    "rows_dropped_unverifiable": 0,
     "boring": 0,
     "boring_share": 0,
     "provider_substitutions": 0,
     "cached_responses": 0,
-    "verdict": "SUSPECT — see the counts above; a non-zero value here invalidates the numbers below it until chased down"
+    "verdict": "clean — zero BORING, no substitutions, no cached responses"
   },
   "ceiling": {
     "present": false,
@@ -51,20 +54,23 @@
       "pdf-3",
       "pdf-4",
       "pdf-5",
-      "pdf-7",
       "pdf-6",
+      "pdf-7",
       "tok-1",
       "tok-2",
       "tok-3",
       "sheets-1",
       "sheets-2",
       "sheets-3",
-      "nb-1",
-      "nb-2",
-      "nb-3",
       "draw-1",
       "draw-2",
       "draw-3",
+      "nb-1",
+      "nb-2",
+      "nb-3",
+      "vercel-1",
+      "vercel-2",
+      "vercel-3",
       "def-1",
       "def-2",
       "def-3",
@@ -74,9 +80,6 @@
       "web-1",
       "web-2",
       "web-3",
-      "vercel-1",
-      "vercel-2",
-      "vercel-3",
       "canvas-1",
       "canvas-2",
       "canvas-3",
@@ -98,12 +101,12 @@
       "gmail-1",
       "gmail-2",
       "gmail-3",
-      "obs-1",
-      "obs-2",
-      "obs-3",
       "pptx-1",
       "pptx-2",
-      "pptx-3"
+      "pptx-3",
+      "obs-1",
+      "obs-2",
+      "obs-3"
     ],
     "note": "No frontier ceiling in this dataset, so attribution is NOT computed. FORMAT/SKILL-TEXT/MODEL shares are absent rather than guessed."
   },
@@ -114,14 +117,7 @@
       "reason": "hosted side not measured — no OPENROUTER_API_KEY on this machine"
     }
   ],
-  "discarded_cells": [
-    {
-      "skill": "anthropic__pdf",
-      "model": "gemma2-2b-q4_0",
-      "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
-    }
-  ],
+  "discarded_cells": [],
   "not_measured": {
     "classes": [
       "0.5B",

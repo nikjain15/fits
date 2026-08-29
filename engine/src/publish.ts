@@ -179,7 +179,7 @@ function main() {
     note: "Absent, not estimated. A class with no measurement is shown nowhere on the site except here.",
   };
 
-  const discarded = nodes.filter((n) => n.discarded).map((n) => ({
+  const discarded = store.liveDiscards(nodes).map((n) => ({
     skill: n.inputs?.skill, model: n.inputs?.model, condition: n.inputs?.condition, reason: n.discarded,
   }));
 

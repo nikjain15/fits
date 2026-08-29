@@ -118,23 +118,23 @@ export interface Categorisation {
  * @param text         body text (may be empty for catalogue rows)
  * @param description  the skill's own description, when we have it
  */
+/** Ranked strongest first, so a cap keeps the best evidence. */
+const TIER = { name: 0, description: 1, body: 2 } as const;
+
 export function categorise(name: string, text: string, description = ""): Categorisation {
-  const ids: string[] = [];
-  const evidence: Record<string, string> = {};
+  const found: Array<{ id: string; tier: number; why: string }> = [];
 
   for (const c of CATEGORIES) {
     const inName = c.name.exec(name);
     if (inName) {
-      ids.push(c.id);
-      evidence[c.id] = `name contains "${inName[0]}"`;
+      found.push({ id: c.id, tier: TIER.name, why: `name contains "${inName[0]}"` });
       continue;
     }
     // The description is the author's own statement of purpose: one hit is enough.
     if (description) {
       const inDesc = c.name.exec(description) ?? c.body.map((re) => re.exec(description)).find(Boolean);
       if (inDesc) {
-        ids.push(c.id);
-        evidence[c.id] = `description mentions "${inDesc[0]}"`;
+        found.push({ id: c.id, tier: TIER.description, why: `description mentions "${inDesc[0]}"` });
         continue;
       }
     }
@@ -147,12 +147,31 @@ export function categorise(name: string, text: string, description = ""): Catego
       if (hits.length >= 2) break;
     }
     if (hits.length >= 2) {
-      ids.push(c.id);
-      evidence[c.id] = `body mentions ${hits.map((h) => `"${h}"`).join(" and ")}`;
+      found.push({ id: c.id, tier: TIER.body, why: `body mentions ${hits.map((h) => `"${h}"`).join(" and ")}` });
     }
   }
 
-  return { ids, evidence };
+  /**
+   * AT MOST THREE, strongest evidence first.
+   *
+   * Loosening the description rule fixed 66% uncategorised and immediately
+   * created the opposite fault: `anthropic/xlsx` came back as Documents, Data,
+   * Browser, Coding, Writing AND Agents — six of twelve categories, because a
+   * good description naturally mentions the file types it reads, the tools it
+   * uses and the agent it runs in. A skill in half the categories is not
+   * categorised, it is noise, and it makes every filter useless.
+   *
+   * Three is the cap because a skill genuinely can span a few domains — `pdf` is
+   * fairly documents AND data AND media — but not six. Name evidence outranks
+   * description, which outranks body, so the cap keeps what the author was most
+   * deliberate about.
+   */
+  found.sort((a, b) => a.tier - b.tier);
+  const kept = found.slice(0, 3);
+  return {
+    ids: kept.map((f) => f.id),
+    evidence: Object.fromEntries(kept.map((f) => [f.id, f.why])),
+  };
 }
 
 export const CATEGORY_LABEL: Record<string, string> =

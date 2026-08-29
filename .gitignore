@@ -13,3 +13,10 @@ data/runs/last-digest-snapshot.json
 # every published number is reproducible from data/nodes/, and every run is
 # readable verbatim in data/runs/transcripts.jsonl. They are the reason anyone
 # should believe a rate on the site.
+
+# The raw crawl: 66MB and growing, regenerable by re-running discovery, and NOT
+# evidence for any published claim. The derived catalogue the site actually reads
+# (web/data/catalogue-*.json) is committed; this is the working file behind it.
+data/corpus/skills.jsonl
+data/corpus/descriptions.jsonl
+data/corpus/crawl-state.json

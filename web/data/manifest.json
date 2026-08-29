@@ -1,12 +1,12 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T14:58:12.610Z",
+  "generated": "2026-08-29T15:01:12.897Z",
   "bar": 0.8,
-  "runs": 2968,
-  "cells": 110,
+  "runs": 3184,
+  "cells": 118,
   "skills": 20,
   "cases": 64,
-  "models": 6,
+  "models": 7,
   "lanes": [
     "local",
     "hosted"
@@ -36,13 +36,14 @@
     "ministral-3b": "cat-db0df1d3",
     "gemma-3-4b": "cat-f47ebee",
     "qwen2.5-7b-q4km": "845dbda0ea48ed74",
+    "llama-3.1-8b": "cat-25c6934f",
     "claude-sonnet-5": "cat-954e489f"
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T14:58:09.318Z"
+    "last": "2026-08-29T15:00:24.658Z"
   },
-  "spend_usd": 2.3098,
+  "spend_usd": 2.3538,
   "integrity": {
     "rows_dropped_truncated": 0,
     "rows_dropped_unverifiable": 0,
@@ -93,12 +94,18 @@
       "reason": "hosted side not measured — no OPENROUTER_API_KEY on this machine"
     }
   ],
-  "discarded_cells": [],
+  "discarded_cells": [
+    {
+      "skill": "anthropic__pdf",
+      "model": "llama-3.2-1b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    }
+  ],
   "not_measured": {
     "classes": [
       "0.5B",
       "1.5B",
-      "8B",
       "9B",
       "12B"
     ],

@@ -301,7 +301,27 @@ function renderHome() {
     return (sorters[state.sort] || sorters.fit)(a, b);
   });
   const fits = SK.filter(sk => { const f = fitOf(sk, myModel); return f && f.ok; }).length;
-  const corpus = M.map(m => m.A ? `${m.cls} ${pc(m.A.substance.rate)}` : null).filter(Boolean).join(' · ');
+  /**
+   * The corpus line carries its interval, always.
+   *
+   * It briefly read "3B 89% · 4B 57%", which looks like a 3B model beating a 4B
+   * by 32 points — a striking finding, and completely spurious: those cells were
+   * 3 cases and 7 runs, with intervals of [0.35-1.00] and [0.25-0.84] that
+   * overlap almost entirely. Two bare percentages side by side invite exactly the
+   * comparison the data cannot support, which is the confidently-wrong number
+   * this whole product exists to prevent — on its own front page.
+   *
+   * So every class shows its interval, and a class still too thin to compare is
+   * marked rather than quietly ranked beside the solid ones.
+   */
+  const THIN_N = 30;
+  const corpus = M.map(m => {
+    if (!m.A) return null;
+    const a = m.A.substance;
+    const thin = a.n_calls < THIN_N;
+    return `<span class="mono" style="${thin ? 'opacity:.65' : ''}">${m.cls} ${pc(a.rate)}<span style="color:var(--fg4)"> ${p2(a.lo)}–${p2(a.hi)}</span>${thin ? '<span title="too few runs to compare against the others" style="color:var(--warn)">~</span>' : ''}</span>`;
+  }).filter(Boolean).join(' · ');
+  const thinClasses = M.filter(m => m.A && m.A.substance.n_calls < THIN_N).map(m => m.cls);
 
   return `<div class="wrap">
     <div class="paste"><input id="skillurl" placeholder="github.com/owner/repo — test a skill of your own" value="${esc(state.url)}">
@@ -321,7 +341,7 @@ function renderHome() {
       ${[['fit', 'best on ' + M[myModel].cls], ['worst', 'worst first'], ['cost', 'cheapest to run'], ['copies', 'most copied'], ['stars', 'repo stars'], ['size', 'largest'], ['name', 'name']]
         .map(([k, l]) => `<button class="tog ${state.sort === k ? 'on' : ''}" data-msort="${k}">${l}</button>`).join('')}</div>
 
-    <div class="ok0" style="margin:14px 0 18px">Corpus level, where the numbers have power — <b>${corpus}</b> across ${MET.skills} skills. Per-skill cells below rest on <b>${MET.cases_per_cell || '3–7'} cases each</b>, so they resolve coarsely. Read a row as a direction; read this line as a rate.</div>
+    <div class="ok0" style="margin:14px 0 18px">Corpus level, where the numbers have power — ${corpus} across ${MET.skills} skills, each with its 95% interval. Per-skill cells below rest on <b>${MET.cases_per_cell || '3–7'} cases each</b>, so they resolve coarsely. Read a row as a direction; read this line as a rate.${thinClasses.length ? `<br><span style="color:var(--warn)">~</span> <span class="dim">${thinClasses.join(', ')} ${thinClasses.length > 1 ? 'are' : 'is'} still being measured — too few runs to rank against the rest. Intervals that wide cannot separate two models, so do not read an ordering into them yet.</span>` : ''}</div>
 
     <div class="colh" style="grid-template-columns:minmax(0,1fr) 74px 108px 76px 76px"><span>skill</span><span>${M[0].cls} → ${M[M.length - 1].cls}</span><span>on ${M[myModel].cls}</span><span>per run</span><span>min-spec</span></div>
     ${list.map(sk => {

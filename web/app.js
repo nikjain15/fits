@@ -248,7 +248,7 @@ function renderCatalogue() {
     <div class="note" style="margin:10px 0">
       ${filtered.length >= 600 ? 'First 600 matches. ' : `${filtered.length.toLocaleString()} match. `}
       ${searchingAll ? `Searching all ${st.distinct_skills.toLocaleString()}.` : `Searching the top ${st.top_tier.toLocaleString()} by stars — <span class="lnk" data-catall>search all ${st.distinct_skills.toLocaleString()}</span>.`}
-      ${st.described ? `<span class="dim"> ${Math.round(100 * st.described / st.top_tier)}% of the top tier carries the author's own description; the rest are categorised from the name alone, which is weaker.</span>` : ''}
+      ${st.described ? `<span class="dim"> ${Math.min(100, Math.round(100 * st.described / st.top_tier))}% of the top ${st.top_tier.toLocaleString()} carries the author's own description (${st.described_total ? st.described_total.toLocaleString() : st.described.toLocaleString()} fetched in all); the rest are categorised from the name alone, which is weaker.</span>` : ''}
     </div>
     <div class="colh" style="grid-template-columns:minmax(0,1fr) 84px 74px 96px"><span>skill</span><span>copied</span><span>size</span><span>status</span></div>
     ${hits.length === 0 ? `<div class="note t">Nothing matches “${esc(q)}”.</div>` : ''}

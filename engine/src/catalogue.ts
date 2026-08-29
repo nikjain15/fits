@@ -123,7 +123,12 @@ export function buildCatalogue(): {
     with_osi_licence: licensed,
     measured: rows.filter((r) => r.m).length,
     uncategorised: rows.filter((r) => !r.g.length).length,
-    described: rows.filter((r) => r.d).length,
+    // Counted WITHIN the tier the site actually renders. Counting every
+    // described row against the top tier's size produced "160% of the top tier
+    // carries a description" on the live page — a percentage over 100, which is
+    // the most obvious kind of confidently-wrong number there is, and it shipped.
+    described: rows.slice(0, TOP_TIER).filter((r) => r.d).length,
+    described_total: rows.filter((r) => r.d).length,
     top_tier: Math.min(TOP_TIER, rows.length),
   };
   // Counts per category, so the UI never renders a filter that matches nothing.

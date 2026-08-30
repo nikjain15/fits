@@ -22,6 +22,7 @@ import { MODELS, available } from "./models.ts";
 import * as store from "./store.ts";
 import { writeCatalogue, buildCatalogue } from "./catalogue.ts";
 import { categorise, CATEGORY_LABEL } from "./categorise.ts";
+import { disagreements } from "./disagreement.ts";
 import { cells, markCeiling, modelSummary, classesFor, specFor, quantizationDeltas } from "./aggregate.ts";
 import { SIZE_CLASS_ORDER, HARNESS_VERSION, type Condition, type ResultRow } from "./types.ts";
 import { acceptance, suiteFor } from "./cases.ts";
@@ -301,6 +302,8 @@ function main() {
     discarded_cells: discarded,
     not_measured,
     thresholds: { thin_cases: THIN_CASES, thin_calls: THIN_CALLS },
+    // The question the product rests on, computed rather than asserted.
+    within_class: disagreements(C, BAR).classes,
     latency_note:
       "Local latency is published as TWO numbers and they are never merged. cold = the first run of a skill, which pays full prompt evaluation. warm = the median of the runs after it, where llama.cpp reuses its KV prefix cache because the harness sends a byte-identical system prompt each time. Measured gap on agents365__drawio (41,514 chars) x qwen2.5-7b-q4_K_M: 163.7s cold against 4.8s warm, 34x. A user invoking a skill for the first time feels the cold number, so publishing only the median would be a confidently-wrong number about the one thing the local lane exists to report.",
     protocol_note:

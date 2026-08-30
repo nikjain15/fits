@@ -1,0 +1,1 @@
+{"key":"run-5e150deb589b03335c6b","type":"run","inputs":{"skill":"anthropic__docx","model":"llama-3.2-3b","condition":"A","digest":"cat-7996146b"},"rows":[],"discarded":"stopped early after 20 runs at 35% — more than 30 points below the 0.8 bar. Not published as a rate.","completed_at":"2026-08-29T23:42:50.945Z","wall_ms":30944,"spend_usd":0}

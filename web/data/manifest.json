@@ -1,23 +1,25 @@
 {
   "harness_version": "fits-engine/0.1.0",
-  "generated": "2026-08-29T23:26:09.814Z",
+  "generated": "2026-08-30T00:30:45.938Z",
   "bar": 0.8,
-  "runs": 5200,
-  "cells": 199,
+  "runs": 5929,
+  "cells": 222,
   "skills": 20,
   "cases": 64,
-  "models": 9,
+  "models": 10,
   "lanes": [
     "hosted",
     "local"
   ],
   "providers": [
-    "",
-    "ollama-local",
     "DeepInfra",
+    "ollama-local",
+    "Mistral",
+    "",
+    "Parasail",
     "Claude Platform on AWS",
     "Cloudflare",
-    "Mistral"
+    "CoreWeave"
   ],
   "quantizations": [
     "unknown",
@@ -35,6 +37,7 @@
   "digests": {
     "llama-3.2-1b": "cat-440736d4",
     "gemma2-2b-q4_0": "8ccf136fdd5298f3",
+    "llama-3.2-3b": "cat-7996146b",
     "ministral-3b": "cat-db0df1d3",
     "gemma-3-4b": "cat-f47ebee",
     "qwen2.5-7b-q4km": "845dbda0ea48ed74",
@@ -45,14 +48,14 @@
   },
   "run_window": {
     "first": "2026-08-29T03:33:43.532Z",
-    "last": "2026-08-29T16:11:20.168Z"
+    "last": "2026-08-29T23:48:43.809Z"
   },
-  "spend_usd": 2.3749,
+  "spend_usd": 3.1551,
   "integrity": {
     "rows_dropped_truncated": 0,
     "rows_dropped_unverifiable": 0,
-    "boring": 1740,
-    "boring_share": 0.3346,
+    "boring": 45,
+    "boring_share": 0.0076,
     "provider_substitutions": 0,
     "cached_responses": 0,
     "verdict": "SUSPECT — see the counts above; a non-zero value here invalidates the numbers below it until chased down"
@@ -109,7 +112,7 @@
       "skill": "anthropic__pptx",
       "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__webapp-testing",
@@ -118,10 +121,16 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
+      "skill": "agents365__drawio",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "NOT A VALID MEASUREMENT — 4 of 14 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+    },
+    {
       "skill": "anthropic__xlsx",
       "model": "ministral-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 23 runs at 48% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__docx",
@@ -130,28 +139,28 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "gws__gws-gmail-send",
-      "model": "qwen2.5-7b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
       "skill": "anthropic__docx",
       "model": "qwen2.5-7b",
       "condition": "A",
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "gws__gws-gmail-send",
+      "skill": "vercel__cli-tokens",
+      "model": "llama-3.2-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "kdense__database-lookup",
       "model": "ministral-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 21 runs at 48% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "gws__gws-gmail-send",
       "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 40% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__xlsx",
@@ -160,22 +169,16 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "anthropic__xlsx",
-      "model": "llama-3.2-3b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
       "skill": "anthropic__docx",
       "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 35% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__pdf",
       "model": "llama-3.2-1b",
       "condition": "A",
-      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
       "skill": "anthropic__pdf",
@@ -184,10 +187,10 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "anthropic__docx",
-      "model": "ministral-3b",
+      "skill": "kepano__defuddle",
+      "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 25% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__pptx",
@@ -204,66 +207,72 @@
     {
       "skill": "anthropic__webapp-testing",
       "model": "ministral-8b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__pptx",
-      "model": "ministral-3b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__docx",
-      "model": "qwen3-8b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__webapp-testing",
-      "model": "ministral-3b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__xlsx",
-      "model": "qwen2.5-7b",
       "condition": "A",
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
       "skill": "anthropic__pdf",
-      "model": "granite-4.1-8b",
+      "model": "ministral-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "NOT A VALID MEASUREMENT — 12 of 13 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+    },
+    {
+      "skill": "anthropic__docx",
+      "model": "qwen3-8b",
+      "condition": "A",
+      "reason": "NOT A VALID MEASUREMENT — 19 of 19 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+    },
+    {
+      "skill": "addyosmani__browser-devtools",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "NOT A VALID MEASUREMENT — 12 of 12 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+    },
+    {
+      "skill": "anthropic__webapp-testing",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "gws__gws-sheets",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 45% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "anthropic__xlsx",
+      "model": "qwen2.5-7b",
+      "condition": "A",
+      "reason": "NOT A VALID MEASUREMENT — 16 of 16 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
       "skill": "anthropic__webapp-testing",
       "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 40% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__xlsx",
       "model": "ministral-8b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "gws__gws-gmail-send",
-      "model": "ministral-8b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__pdf",
-      "model": "gemma-3-12b",
       "condition": "A",
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
       "skill": "anthropic__xlsx",
       "model": "qwen3.5-9b",
+      "condition": "A",
+      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+    },
+    {
+      "skill": "kepano__defuddle",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 20% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "tenglin__notebooklm",
+      "model": "ministral-3b",
       "condition": "A",
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
@@ -274,10 +283,10 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "gws__gws-gmail-send",
-      "model": "qwen3.5-9b",
+      "skill": "anthropic__pdf",
+      "model": "llama-3.2-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 45% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__pptx",
@@ -289,13 +298,7 @@
       "skill": "gws__gws-gmail-send",
       "model": "qwen3-8b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
-    },
-    {
-      "skill": "anthropic__pdf",
-      "model": "llama-3.1-8b",
-      "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "NOT A VALID MEASUREMENT — 18 of 19 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
       "skill": "anthropic__pptx",
@@ -304,10 +307,22 @@
       "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
     },
     {
-      "skill": "anthropic__webapp-testing",
-      "model": "qwen3.5-9b",
+      "skill": "vercel__cli-tokens",
+      "model": "ministral-3b",
       "condition": "A",
-      "reason": "NOT A VALID MEASUREMENT — 20 of 20 misses are BORING. BORING is a smoke alarm for our own harness; no model verdict may be read from this cell until it is chased down."
+      "reason": "stopped early after 20 runs at 0% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "vercel__deploy",
+      "model": "ministral-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 35% — more than 30 points below the 0.8 bar. Not published as a rate."
+    },
+    {
+      "skill": "agents365__drawio",
+      "model": "llama-3.2-3b",
+      "condition": "A",
+      "reason": "stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate."
     },
     {
       "skill": "anthropic__docx",
@@ -329,6 +344,76 @@
     "thin_cases": 20,
     "thin_calls": 70
   },
+  "within_class": [
+    {
+      "cls": "3B",
+      "models": [
+        "ministral-3b",
+        "llama-3.2-3b"
+      ],
+      "skillsCompared": 6,
+      "separated": 0,
+      "verdictSplits": 5,
+      "meanGap": 0.271604938271605,
+      "maxGap": 0.33333333333333337,
+      "worst": {
+        "skill": "kepano__obsidian-cli",
+        "cls": "3B",
+        "a": {
+          "model": "ministral-3b",
+          "rate": 0.6666666666666666,
+          "lo": 0.20765495512648788,
+          "hi": 0.9385096847238393,
+          "n": 27
+        },
+        "b": {
+          "model": "llama-3.2-3b",
+          "rate": 1,
+          "lo": 0.4384939195509822,
+          "hi": 1,
+          "n": 27
+        },
+        "gap": 0.33333333333333337,
+        "separated": false,
+        "verdictSplit": true
+      },
+      "reading": "3B shows 5 of 6 comparisons where one model clears the 0.80 bar and the other does not — but no interval separates, so this is a warning about the badge rather than proof the models differ. More trials would settle it."
+    },
+    {
+      "cls": "8B",
+      "models": [
+        "llama-3.1-8b",
+        "granite-4.1-8b"
+      ],
+      "skillsCompared": 20,
+      "separated": 0,
+      "verdictSplits": 8,
+      "meanGap": 0.21640211640211643,
+      "maxGap": 0.33333333333333337,
+      "worst": {
+        "skill": "kepano__obsidian-cli",
+        "cls": "8B",
+        "a": {
+          "model": "llama-3.1-8b",
+          "rate": 1,
+          "lo": 0.4384939195509822,
+          "hi": 1,
+          "n": 27
+        },
+        "b": {
+          "model": "granite-4.1-8b",
+          "rate": 0.6666666666666666,
+          "lo": 0.20765495512648788,
+          "hi": 0.9385096847238393,
+          "n": 27
+        },
+        "gap": 0.33333333333333337,
+        "separated": false,
+        "verdictSplit": true
+      },
+      "reading": "8B shows 8 of 20 comparisons where one model clears the 0.80 bar and the other does not — but no interval separates, so this is a warning about the badge rather than proof the models differ. More trials would settle it."
+    }
+  ],
   "latency_note": "Local latency is published as TWO numbers and they are never merged. cold = the first run of a skill, which pays full prompt evaluation. warm = the median of the runs after it, where llama.cpp reuses its KV prefix cache because the harness sends a byte-identical system prompt each time. Measured gap on agents365__drawio (41,514 chars) x qwen2.5-7b-q4_K_M: 163.7s cold against 4.8s warm, 34x. A user invoking a skill for the first time feels the cold number, so publishing only the median would be a confidently-wrong number about the one thing the local lane exists to report.",
   "protocol_note": "A uniform text tool-call protocol is used across every model, because several models have no native tool API on their provider and a native harness would fail them 100% for a harness reason. A text protocol is HARDER than a native tool API, so absolute rates read low. The ranking and the failure mix are unaffected."
 }

@@ -164,3 +164,88 @@ footer{border-top:1px solid var(--hair);margin-top:40px;padding:18px 0 0;font-si
 .band b{position:absolute;top:-3px;width:2px;height:18px;background:var(--ac)}
 .band s{position:absolute;top:-5px;width:1px;height:22px;background:var(--fg2);opacity:.7}
 .yours{border-left:2px solid var(--ac)}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   READABILITY AND MOBILE — added after the page was called overwhelming.
+
+   Two faults, both mine. The type was 13.5px everywhere with almost no
+   hierarchy, so nothing told the eye what mattered; and the layout was a
+   fixed multi-column grid that on a phone squeezed five columns into 375px
+   until the numbers wrapped into each other.
+
+   The fix is not less information — every measurement and caveat is still
+   here. It is hierarchy: one thing per row that is big enough to scan, the
+   rest quiet and secondary, and on narrow screens a card instead of a table.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+body{font-size:14.5px;line-height:1.55}
+.wrap{padding:22px 22px 100px}
+
+/* Rows breathe, and the whole row is the target — not just the name. */
+.item{padding:18px 6px;transition:background .12s}
+.item .nm{font-size:14.5px;font-weight:500}
+.item .au{font-size:11px;opacity:.75}
+.item .v{font-size:19px;letter-spacing:-.4px}
+.item .ds{margin-top:6px}
+.colh{padding-bottom:10px;font-size:10px}
+
+/* One clear heading per view. */
+.lhead h2{font-size:20px;letter-spacing:-.3px}
+.lhead{margin-bottom:14px;gap:14px}
+
+/* Controls read as controls, and are thumb-sized. */
+.tog{padding:6px 13px;font-size:12.5px;border-radius:16px}
+select.tog{-webkit-appearance:none;appearance:none;padding-right:26px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--fg3) 50%),linear-gradient(135deg,var(--fg3) 50%,transparent 50%);
+  background-position:calc(100% - 14px) 52%,calc(100% - 9px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.chips{gap:8px;margin:10px 0}
+.tabs button{font-size:15px;padding-bottom:12px}
+.paste input{padding:13px 16px;font-size:14px}
+.go{padding:13px 20px}
+
+/* The search box is a real field, not a hairline. */
+.srch{border:1px solid var(--hair2);border-radius:8px;padding:8px 12px;width:220px;background:var(--el)}
+.srch:focus{border-color:var(--ac2)}
+
+@media(max-width:760px){
+  .wrap{padding:16px 14px 80px}
+  .hin{padding:10px 14px;gap:10px}
+  .lens{margin-left:0;width:100%;justify-content:space-between}
+  .mseg{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+  .mseg button{padding:6px 10px;font-size:12px;white-space:nowrap}
+
+  /* A phone gets cards, not a squeezed table. The header row is meaningless
+     without columns, so it goes; each value labels itself instead. */
+  .colh{display:none}
+  .item{grid-template-columns:1fr !important;gap:8px;padding:16px 4px}
+  .item>div:not(:first-child){display:flex;align-items:baseline;gap:10px}
+  .item>div:not(:first-child):before{content:attr(data-label);font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--fg4);min-width:74px}
+  .item .v{font-size:22px}
+  .item .spec{text-align:left}
+  .srch{width:100%}
+  .lhead{flex-direction:column;align-items:stretch}
+  .lhead .ct{order:3}
+  h1{font-size:19px}
+  .hero{grid-template-columns:1fr !important}
+  .tkcols{height:110px}
+  .tkf .sb{font-size:9px}
+  .kv{grid-template-columns:1fr;gap:2px 0}
+  .kv .k{margin-top:8px}
+  .two{grid-template-columns:1fr}
+  .at{grid-template-columns:1fr !important;gap:4px}
+  .rr{grid-template-columns:64px minmax(0,1fr);row-gap:4px}
+  .rr>span:last-child{grid-column:1/-1;text-align:left}
+  table.tbl{font-size:12px}
+  .leak{grid-template-columns:1fr}
+}
+
+@media(max-width:420px){
+  .wrap{padding:14px 11px 70px}
+  .item .v{font-size:20px}
+  .tog{padding:5px 11px;font-size:12px}
+}
+
+/* The interval belongs under its number on wide screens, beside it on cards. */
+.item .v + .sb, .item .v ~ .sb{display:block;margin-top:2px;font-size:11px}
+@media(max-width:760px){.item .v + .sb, .item .v ~ .sb{display:inline;margin-top:0}}

@@ -260,9 +260,9 @@ function renderCatalogue() {
         ${row.l ? '' : '<span class="pill warn" title="GitHub reports no licence for this repo">no licence</span>'}</div>
         <div class="ds">${row.d ? esc(row.d.slice(0, 150)) : '<span style="color:var(--fg4)">no description in the file</span>'}</div>
         <div class="sb" style="color:var(--fg4)">${row.s.toLocaleString()}★ repo · ${row.g.length ? row.g.map(g => CATLABEL[g] || g).join(' · ') : 'uncategorised'}</div></div>
-      <div class="mono" style="font-size:11.5px;color:${row.c ? 'var(--ac)' : 'var(--fg4)'}" title="repositories carrying a byte-identical copy of this skill">${row.c ? '×' + (row.c + 1) : '—'}</div>
-      <div class="mono dim" style="font-size:11.5px">${(row.z / 1000).toFixed(1)}k</div>
-      <div>${row.m
+      <div class="mono" data-label="copied" style="font-size:12px;color:${row.c ? 'var(--ac)' : 'var(--fg4)'}" title="repositories carrying a byte-identical copy of this skill">${row.c ? '×' + (row.c + 1) : '—'}</div>
+      <div class="mono dim" data-label="size" style="font-size:12px">${(row.z / 1000).toFixed(1)}k</div>
+      <div data-label="status">${row.m
         ? '<span class="pill ac">tested</span>'
         : '<span class="mono" style="color:var(--fg4);font-size:11.5px">not tested</span>'}</div>
     </div>`).join('')}`;
@@ -353,10 +353,10 @@ function renderTested() {
         <div><div><span class="nm">${title(sk)}</span><span class="au">${esc(sm.repo)}</span>
           ${state.yours.includes(sk) ? '<span class="pill ac">yours</span>' : ''}</div>
           <div class="ds">${miniTrackInline(sk)}</div></div>
-        <div><span class="v ${f && f.ok ? '' : 'no'}">${f ? p2(f.r) : (stopped ? '<span class="pill warn">stopped</span>' : '—')}</span>${f && f.a.thin ? '<span title="thin evidence — few cases" style="color:var(--warn);font-family:var(--mono)">~</span>' : ''}
-          <div class="sb" style="color:var(--fg4)">${f ? `${p2(f.a.lo)}–${p2(f.a.hi)}` : ''}</div></div>
-        <div class="mono" style="font-size:11.5px;color:var(--fg3)">${money(costOf(sk))}</div>
-        <div class="spec ${sp && sp.min_spec ? '' : 'no'}">${sp ? specLabel(sp.min_spec) : '—'}</div></div>`;
+        <div data-label="on ${cls}"><span class="v ${f && f.ok ? '' : 'no'}">${f ? p2(f.r) : (stopped ? '<span class="pill warn">stopped</span>' : '—')}</span>${f && f.a.thin ? '<span title="thin evidence — few cases" style="color:var(--warn);font-family:var(--mono)">~</span>' : ''}
+          <span class="sb" style="color:var(--fg4)">${f ? `${p2(f.a.lo)}–${p2(f.a.hi)}` : ''}</span></div>
+        <div class="mono" data-label="per run" style="font-size:12px;color:var(--fg3)">${money(costOf(sk))}</div>
+        <div class="spec ${sp && sp.min_spec ? '' : 'no'}" data-label="min-spec">${sp ? specLabel(sp.min_spec) : '—'}</div></div>`;
     }).join('')}
     <div class="note t">${MET.runs.toLocaleString()} runs · ${MET.run_window.last.slice(0, 10)} · <span class="kbd">/</span> to search</div>`;
 }
@@ -765,8 +765,20 @@ function renderRun() {
 function render() {
   document.getElementById('app').innerHTML =
     route === '@run' ? renderRun() : route ? renderDetail(route) : renderHome();
+  // Classes holding more than one model — those buttons need the model name.
+  const seenCls = {};
+  for (const m of M) seenCls[m.cls] = (seenCls[m.cls] || 0) + 1;
+  const dupClass = new Set(Object.keys(seenCls).filter(c => seenCls[c] > 1));
   document.getElementById('mseg').innerHTML = M.map((m, k) =>
-    `<button data-my="${k}" class="${k === myModel ? 'on' : ''}" title="${esc(m.id)} — ${m.lane} lane, ${esc(m.quantization)}">${m.cls}</button>`).join('');
+    /**
+     * Label with the MODEL when a class holds more than one.
+     *
+     * The picker read "1B 2.6B 3B 3B 4B 7B 8B 8B 12B" — two buttons labelled 3B
+     * and two labelled 8B, with no way to tell which you were selecting. That is
+     * the product's own point turning into a UI bug: a class is a set of models,
+     * so wherever a class has more than one member the label has to say which.
+     */
+    `<button data-my="${k}" class="${k === myModel ? 'on' : ''}" title="${esc(m.id)} — ${m.lane} lane, ${esc(m.quantization)}">${esc(dupClass.has(m.cls) ? shortName(m) : m.cls)}</button>`).join('');
   const g = i => document.getElementById(i);
   g('bp').textContent = BAR.pass.toFixed(2); g('lp').textContent = BAR.pass.toFixed(2);
   g('rp').value = BAR.pass; g('rs').checked = BAR.strict;
@@ -853,6 +865,12 @@ document.addEventListener('keydown', e => {
   if (e.key === '/' && q && document.activeElement !== q && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); q.focus(); return; }
   if (e.key === 'Escape' && route) { route = null; render(); }
 });
+
+/** A short, distinguishing label: the family, not the full id. */
+function shortName(m) {
+  const fam = (m.m || '').replace(/-?(instruct|it|chat)$/i, '');
+  return `${m.cls} ${fam.split('-')[0].slice(0, 8)}`;
+}
 
 function wireHeader() {
   const bt = document.getElementById('barToggle'), bp = document.getElementById('barpop');

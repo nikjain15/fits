@@ -1,0 +1,1 @@
+{"key":"run-f850e7d6131c074d5721","type":"run","inputs":{"skill":"agents365__drawio","model":"llama-3.2-3b","condition":"A","digest":"cat-7996146b"},"rows":[],"discarded":"stopped early after 20 runs at 30% — more than 30 points below the 0.8 bar. Not published as a rate.","completed_at":"2026-08-29T23:45:43.849Z","wall_ms":49368,"spend_usd":0}
